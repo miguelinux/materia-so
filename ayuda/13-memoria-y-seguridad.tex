@@ -1,0 +1,427 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Administración de memoria: Memoria y seguridad}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Administración de memoria: Memoria y seguridad},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Introducción}
+\label{sec:org277a525}
+\begin{frame}[label={sec:org780d12c}]{¿Seguridad?}
+\begin{itemize}
+\item En un sistema de cómputo, no podemos asumir \emph{la mejor intención}
+\begin{itemize}
+\item Un sistema puede tener distintos usuarios, el sistema protege a
+los datos de unos frente a otros
+\item Un usuario puede intentar modificar cómo opera determinado
+programa \emph{y generar salida que aparente ser legítima}
+\item Privilegios parciales/temporales: Bit SUID (a cubrirlo
+posteriormente, en \emph{sistemas de archivos}), \emph{capacidades}
+\end{itemize}
+\item La memoria es el principal \emph{vector de ataque}
+\begin{itemize}
+\item Todos los datos deben pasar por memoria
+\item \ldots{}Y el procesador no puede \emph{entenderla}, sólo \emph{obedecerla}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4dc1933}]{¿No son suficiente los permisos?}
+\begin{itemize}
+\item La memoria segmentada y paginada ya incluyen los conceptos de
+permisos
+\item Desde hace muchos años, los segmentos \emph{de texto} no admiten
+escritura
+\item ¿Qué más puede ocurrir?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga506223}]{Lidiando con información externa}
+\begin{itemize}
+\item Tal vez no tendríamos que preocuparnos de mucho\ldots{} Pero tenemos que
+lidiar frecuentemente con \emph{información externa}
+\begin{itemize}
+\item Información que puede romper nuestras expectativas
+\item Información que no siempre viene de fuentes confiables
+\end{itemize}
+\item Puede ser maliciosa, o presentar errores (¡inocentes!) en el comportamiento
+\item Los mecanismos principales de manejo de estructuras de memoria son
+bastante ingenuos \rarrow inseguros
+\begin{itemize}
+\item Cualquier error en el manejo de memoria es una vulnerabilidad en
+potencia
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org528194b}]{Referencias bibliográficas}
+\begin{center}
+Para comprender mejor este tema, y para profundizar en él, sugiero
+fuertemente:
+\end{center}
+\begin{itemize}
+\item \href{http://www.phrack.org/issues.html?issue=49\&id=14\#article}{Smashing The Stack For Fun And Profit} (Aleph One, revista
+Phrack, 1996)
+\item \href{http://sistop.gwolf.org/biblio/The\_Tao\_of\_Buffer\_Overflows\_-\_Enrique\_Sanchez.pdf}{The Tao of Buffer Overflows} (Enrique Sánchez, inédito)
+\end{itemize}
+\end{frame}
+
+
+\section{Organización de memoria: El stack}
+\label{sec:org39c8fc5}
+\begin{frame}[label={sec:orgf5338c7}]{Vuelta a la organización de la memoria}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{center}
+\includegraphics[height=0.5\textheight]{../img/ditaa/proceso_en_memoria.png}
+\end{center}
+\end{column}\begin{column}{0.4\textwidth}
+\begin{itemize}
+\item Pila de llamadas
+\item Espacio de \emph{libres}
+\item Sección de datos
+\item Sección de texto
+\end{itemize}
+\pause
+\begin{center}
+Vamos a centrarnos en el \emph{stack} (\emph{pila de llamadas}):
+
+¿Para qué sirve?
+
+¿Cómo se estructura?
+\end{center}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org58812fd},fragile]{Enfocándonos a la \emph{pila de llamadas}}
+ \begin{center}
+¿Cómo se ve una \emph{llamada a función} ya compilada?
+\end{center}
+\begin{itemize}
+\item Empleamos dos valores principales, en registros:
+\begin{description}
+\item[{\emph{Stack Pointer} (\texttt{SP})}] Apunta al \emph{final actual} (dirección
+inferior) de la pila. En arquitecturas x86, emplea el registro
+\texttt{ESP}.
+\item[{\emph{Frame Pointer} (\texttt{FP})}] Apunta al \emph{inicio} (dirección superior)
+del \emph{marco del stack}. Algunos textos le llaman \emph{base local}
+(\texttt{LB}), y en arquitecturas x86, emplea el registro \texttt{EBP}.
+\end{description}
+\item Guarda la \emph{instrucción de retorno} (\emph{instruction pointer})
+\item Reserva espacio para los datos locales a la función
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8f6b246},fragile]{Comparando llamada en C y ensamblador x86-32}
+ \begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+void func(int a, int b, int c) {
+   char buffer1[5];
+   char buffer2[10];
+}
+
+void main() {
+  func(1,2,3);
+}
+\end{verbatim}
+\end{column}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+; main
+	pushl $3
+	pushl $2
+	pushl $1
+	call func
+
+func:
+	pushl %ebp
+	movl %esp,%ebp
+	subl $20,%esp
+\end{verbatim}
+\end{column}\end{columns}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.85\textwidth]{../img/ditaa/stackframe.png}
+\caption{Marco del stack con llamada a \texttt{func(1,2,3)} en x86-32}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgaff2311},fragile]{¿Qué hizo el código compilado?}
+ \begin{itemize}
+\item Los tres primeros \texttt{pushl}: \emph{Debajo} de la pila, agrega los tres
+argumentos de la función
+\begin{itemize}
+\item Los valores literales 1, 2, 3
+\item 4 bytes para cada uno (\texttt{sizeof(int())} en 32 bits)
+\end{itemize}
+\item \texttt{call}: Agrega \texttt{ret} debajo de la pila, y brinca a la ubicación de
+la \emph{etiqueta} \texttt{func}
+\begin{itemize}
+\item Al compilar, se pierde la noción de \emph{bloques} de función
+\item Todo son llamadas por dirección que retienen la dirección de retorno
+\end{itemize}
+\item Ya en \texttt{func}, grabamos \texttt{ebp} (el \emph{frame pointer}), le llamamos \texttt{sfp}
+(\emph{Saved Frame Pointer})
+\item \texttt{movl} graba la dirección del apuntador actual al stack en el
+registro \texttt{esp}, y acto seguido, se le restan 20 bytes (por los 2
+buffers, alineados a 32 bits)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4f527d2},fragile]{El eslabón más débil: Funciones de manejo de cadenas}
+ \begin{itemize}
+\item El diseño del lenguaje C incluye soporte para cadenas a través de su
+biblioteca estándar
+\item Arreglos de caracteres (8bit), terminados por un \texttt{\textbackslash{}0} (\texttt{NUL})
+\item Presenta \emph{familias} de funciones relacionadas para su manejo,
+principalmente \texttt{strcat}, \texttt{strcpy}, \texttt{printf}, \texttt{gets}
+\item Muchas de estas no toman en cuenta \emph{verificación de límites}
+\item Otras, no \emph{necesariamente} incluyen al \texttt{\textbackslash{}0}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga1a4a42},fragile]{Entran en juego los datos suministrados por el usuario}
+ \begin{itemize}
+\item ¿Qué pasa cuando un usuario puede proporcionar datos para que los
+maneje?
+\item Veamos qué pasa con el siguiente código \emph{vulnerable}
+\end{itemize}
+
+\begin{verbatim}
+#include <stdio.h>
+int main(int argc, char **argv) {
+	char buffer[256];
+	if(argc > 1) strcpy(buffer, argv[1]);
+	printf("Escribiste %s\n", buffer);
+	return 0;
+}
+\end{verbatim}
+\pause
+\begin{center}
+¿Quién puede encontrar el punto débil?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org2ddc2e6},fragile]{Copiado sin límites}
+ \begin{center}
+Invocamos al programa vulnerable con un parámetro largo (pero válido):
+\end{center}
+\begin{verbatim}
+$ ./ejemplo1 `perl -e 'print "A" x 120'`
+Escribiste: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+$
+\end{verbatim}
+\pause
+\begin{center}
+Invocamos al programa vulnerable con un parámetro demasiado largo
+para el arreglo:
+\end{center}
+\begin{verbatim}
+$ ./ejemplo1 `perl -e 'print "A" x 500'`
+Escribiste: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+Segmentation fault
+$
+\end{verbatim}
+\begin{center}
+Parecería que el sistema \emph{atrapó} al error exitosamente. \pause ¿O no?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org55f6ca9},fragile]{¿Qué significa nuestro \texttt{Segmentation fault}?}
+ \begin{itemize}
+\item La ejecución del programa fue interrumpida tras procesar un
+argumento de 500 bytes para un arreglo medía sólo 256
+\begin{itemize}
+\item \ldots{}Pero esto \emph{no significa} que el fallo haya sido atrapado
+\item De hecho, \emph{no lo fue}
+\end{itemize}
+\end{itemize}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{../img/ditaa/overflow_500.png}
+\caption{Estado de la memoria después del \texttt{strcpy()}}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgeec38c6},fragile]{¿Qué significa nuestro \texttt{Segmentation fault}?}
+ \begin{itemize}
+\item El \texttt{Segmentation fault} se debe a que la \emph{dirección de retorno} es
+la 0x41414141
+\begin{itemize}
+\item No es una dirección válida y ejecutable
+\end{itemize}
+\item El código está \emph{demostrado vulnerable}
+\begin{itemize}
+\item \ldots{}Pero no lo hemos podido explotar aún
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\section{De una falla a un ataque}
+\label{sec:org4fc69f8}
+\begin{frame}[label={sec:org3f12c2f},fragile]{Convirtiendo una falla de segmento en un ataque}
+ \begin{itemize}
+\item Conociendo el acomodo \emph{exacto} de la memoria, podemos predecir
+cuánto mide el espacio de cada una de las variables
+\begin{itemize}
+\item \ldots{}Y del SFP, y de la dirección de retorno
+\end{itemize}
+\item Si no lo tenemos, con ayuda de un depurador (como \texttt{gdb}) podemos
+leer el estado de los registros o de ubicaciones específicas de
+memoria a lo largo de la vida del programa
+\item En este caso, la longitud \emph{mágica} es de 264 bytes (256 del buffer +
+4 de \texttt{RET} + 4 de \texttt{SFP}
+\item ¿Qué pasa si sobreescribimos \texttt{RET} con una dirección \emph{válida}?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb1a78c9},fragile]{Brincando a otro punto del programa}
+ \begin{itemize}
+\item Es necesario comprender cómo el compilador \emph{transforma} el aparente
+órden lógico de ciertas operaciones
+\item Si estamos en una rutina de verificación (digamos, de contraseña) y
+conocemos la dirección de quien invocó a esta verificación:
+\end{itemize}
+\begin{columns} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+if (valid_user(usr, pass)) {
+  /* (...) */
+} else {
+  printf("Error!\n");
+  exit 1;
+}
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+pushl [%rax]
+pushl [%rbx]
+call valid_user
+bne $0, %ebx, user_fail
+\end{verbatim}
+\end{column}  \end{columns}
+\begin{itemize}
+\item La llamada a \texttt{valid\_user()} regresa al \texttt{if} un valor verdadero (0) o
+falso (cualquier otra cosa)
+\item Si hacemos que el flujo \emph{brinque} a inmediatamente después del
+\texttt{bne}, libramos la verificación
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org03338ed}]{Brincando hacia dentro del stack}
+\begin{itemize}
+\item Si en vez de 'AAAAAAAA\ldots{}' le damos al sistema código ejecutable
+válido, más que brincarnos una validación, podemos hacer que el
+programa ejecute código arbitrario
+\end{itemize}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\textwidth]{../img/ditaa/overflow_jump.png}
+\caption{Ejecutando el código arbitrario inyectado al buffer}
+\end{figure}
+\begin{itemize}
+\item El flujo de ejecución del proceso está comprometido
+\item Tenemos 256 bytes para inyectar el \emph{shellcode} y ejecutar código
+arbitrario con los privilegios del proceso víctima
+\end{itemize}
+\end{frame}
+
+
+\section{Mitigación}
+\label{sec:org548ba5b}
+\begin{frame}[label={sec:org7172566}]{Técnicas de mitigación}
+\begin{itemize}
+\item Claro está, desde hace años se han desarrollado maneras de mitigar
+el daño causado
+\item En primer lugar, cultura de desarrollo seguro
+\begin{itemize}
+\item No emplear funciones que no hagan \emph{verificación de límites}
+\item \ldots{}Pero requieren conciencia por parte de todos los programadores
+\rarrow imposible\ldots{}
+\item Y son sensiblemente más lentas
+\end{itemize}
+\item Segundo, dificultar al atacante inyectar datos arbitrarios
+\begin{itemize}
+\item Aleatorización de direcciones
+\item Canarios
+\item Memoria no ejecutable
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org626ca37}]{Aleatorización de direcciones}
+\begin{itemize}
+\item Incluir espacio arbitrario entre SFP, RET y el buffer
+\item Cambiante a cada ejecución
+\item Dificulta al atacante insertar una cadena de las dimensiones requeridas
+\item Desventajas
+\begin{itemize}
+\item Desperdicia espacio
+\item No siempre puede ser aplicado
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org44e5b95}]{Canario}
+\begin{itemize}
+\item Insertar un valor aleatorio entre las variables locales y los
+registros del frame
+\item Verificarlo al volver de la función
+\begin{itemize}
+\item Terminar el programa si no concuerda
+\end{itemize}
+\item Desventajas
+\begin{itemize}
+\item Debe verificarse a cada llamada a función
+\item Rendimiento disminuído
+\end{itemize}
+\end{itemize}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\textwidth]{../img/ditaa/overflow_canary.png}
+\caption{Mitigación: Uso de canario}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgcae48f9}]{Memoria no ejecutable}
+\begin{itemize}
+\item Bits de control en el MMU impidiendo que se ejecute la memoria en
+el stack
+\item Imposibilitan ejecutar código en el stack
+\begin{itemize}
+\item Pero no regresar a otras direcciones
+\end{itemize}
+\item Técnica de explotación conocida como \emph{Programación orientada a
+retornos} (\emph{Return-Oriented Programming})
+\end{itemize}
+\end{frame}
+\end{document}

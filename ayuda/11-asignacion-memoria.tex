@@ -1,0 +1,1153 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Administración de memoria: Asignación de memoria}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Administración de memoria: Asignación de memoria},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+\section{Memoria contigua}
+\label{sec:org5f5275c}
+
+\begin{frame}[label={sec:org74e6236}]{Compartiendo la memoria desde\ldots{}}
+\begin{itemize}
+\item Como en tantos otros temas, comencemos viendo cómo compartían la
+memoria los \emph{primeros} sistemas multiprocesados
+\item Las primeras implementaciones siempre son las más sencillas
+\begin{itemize}
+\item \ldots{}y las más ingenuas
+\end{itemize}
+\item ¿Cómo eran estos primeros sistemas?
+\begin{itemize}
+\item Poca memoria
+\item Sin MMU
+\item No interactivos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge9d69d7}]{Particiones fijas}
+\begin{itemize}
+\item Primer acercamiento: \emph{Partir} la memoria en varios bloques
+\begin{itemize}
+\item Originalmente del mismo tamaño (¡más sencillo!)
+\item Por ejemplo: En 512KB de memoria física caben el sistema
+operativo mas otros 7 programas de 64KB (16 bits) cada uno
+\end{itemize}
+\item El sistema operativo típicamente usa la \emph{región más baja}, a partir
+de 0x0000
+\begin{itemize}
+\item La \emph{memoria mapeada} a los diversos dispositivos queda dentro del
+segmento del SO
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgfe6701a}]{Particiones fijas}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.65\textheight]{../img/ditaa/mem_particiones_fijas.png}
+\caption{Particiones fijas, con 3 particiones libres}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orga738979}]{Particiones fijas: Ventajas y desventajas}
+\begin{itemize}
+\item ¿Ventajas? Principalmente, simplicidad
+\begin{itemize}
+\item Resolución de direcciones en tiempo de carga
+\item \emph{Registro base} (no requiere siquiera de un \emph{registro límite})
+\item Puede limitarse simplemente con un espacio de direccionamiento
+acorde en el compilador
+\end{itemize}
+\item ¿Desventajas? Rigidez
+\begin{itemize}
+\item \emph{Grado de multiprocesamiento} limitado
+\begin{itemize}
+\item Si hay menos de 7 procesos, se desperdician recursos
+\item Si hay más de 7, tienen que esperar a que se les abra espacio
+\end{itemize}
+\item Desperdicio de espacio (\emph{fragmentación interna})
+\begin{itemize}
+\item Al asignarse la memoria en bloques fijos, un proceso pequeño
+podría desperdiciar mucho espacio
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org91d03c3}]{Particiones flexibles}
+\begin{itemize}
+\item Cada proceso declara sus requisitos de memoria \emph{al iniciar su
+ejecución}
+\begin{itemize}
+\item Debe indicar su uso \emph{máximo previsto} de memoria
+\item Hay mecanismos para \emph{ajustar el tamaño} de un proceso
+preexistente — ¡Pero pueden fallar! (p.ej. si falta memoria para
+satisfacer una solicitud)
+\end{itemize}
+\item El OS tiene acceso directo a toda la memoria \emph{como un contínuo}
+\item Cada región en memoria está limitada (ahora sí) por un registro base
+y un registro límite
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org30b7265}]{Particiones flexibles}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.65\textheight]{../img/ditaa/mem_base_a_limite.png}
+\caption{Espacio de direcciones válidas para el proceso 3 definido por un registro base y un registro límite}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org9b351e5}]{Particiones flexibles: Ventajas y desventajas}
+\begin{itemize}
+\item ¿Ventajas? Sigue siendo: Simplicidad
+\begin{itemize}
+\item Cuando inicia la ejecución del sistema, este esquema parece ideal
+\item Sobrecarga mínima, con un MMU muy básico
+\item Cada proceso puede direccionar el total de memoria disponible
+\end{itemize}
+\item ¿Desventajas? Vienen con el tiempo\ldots{}
+\begin{itemize}
+\item Conforme van iniciando y terminando los procesos, se van creando
+\emph{agujeros} en la asignación de memoria
+\item Según análisis estadístico (Silberschatz, p.289), por cada \(N\)
+bloques asignados se pierden del órden de \(0.5N\) por fragmentación
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgfd7be39}]{Fragmentación en la memoria}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.65\textheight]{../img/ditaa/mem_fragmentacion_con_particiones_flexibles.png}
+\caption{Termina el proceso 1 (de 128K); inician 4 (de 64K), 5 (de 156K) y 6 (de 128K); termina 3 (64K). Se va fragmentando la memoria libre.}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org64eacbb}]{Fragmentación interna y externa}
+\begin{description}
+\item[{Fragmentación interna}] Espacio desperdiciado \emph{dentro} de la
+memoria asignada a un proceso
+\begin{itemize}
+\item Porque tuvo que solicitar \emph{toda la memoria que emplearía} desde
+un principio (y la desperdicia la mayor parte del tiempo
+\item Por tener que \emph{alinearse} a cierta frontera de memoria (p.ej. con
+particiones pre-establecidas)
+\end{itemize}
+\item[{Fragmentación externa}] Espacio de memoria desperdiciado \emph{entre los
+distintos fragmentos}
+\begin{itemize}
+\item En el esquema anterior, hay 320K libres, pero no puede lanzarse
+ningún proceso \(> 192K\), porque no es un bloque \emph{contiguo}
+\end{itemize}
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:orga6f5741}]{¿Cómo ubicar un nuevo proceso?}
+\begin{center}
+Hay tres estrategias principales para dar espacio en la memoria a un
+nuevo proceso:
+\end{center}
+\begin{description}
+\item[{Primer ajuste}] Asigna al nuevo proceso al \emph{primer bloque} de
+tamaño suficiente
+\item[{Mejor ajuste}] Asigna al nuevo proceso al \emph{bloque más chico} en
+que quepa
+\item[{Peor ajuste}] Asigna al nuevo proceso al \emph{bloque más grande} que
+haya disponible
+\end{description}
+\begin{center}
+¿Qué ventajas / desventajas? puede tener cada uno?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgb762b49}]{Primer ajuste}
+\begin{itemize}
+\item El mecanismo más fácil de implementar
+\item Ejecución más rápida
+\item Pero no considera facilitar las cosas para el futuro\ldots{}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org2848b5b}]{Mejor ajuste}
+\begin{itemize}
+\item Requiere revisión completa de los bloques disponibles
+\begin{itemize}
+\item \ldots{}O mantenerlos en una lista ordenada
+\item Empleando un ordenamiento en \emph{montículo} (\emph{heap}), puede ser tan
+ágil/simple como el \emph{primer ajuste}
+\end{itemize}
+\item Busca que el desperdicio sea el menor posible
+\begin{itemize}
+\item Pero va generando muchos bloques muy pequeños
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2256e4d}]{Peor ajuste}
+\begin{itemize}
+\item Requiere revisión completa de los bloques disponibles
+\begin{itemize}
+\item \ldots{}O mantenerlos en una lista ordenada
+\item Empleando un ordenamiento en \emph{montículo} (\emph{heap}), puede ser tan
+ágil/simple como el \emph{primer ajuste}
+\end{itemize}
+\item Busca que los bloques que van quedando tras la creación de nuevos
+procesos \emph{tiendan a ser} del mismo tamaño
+\begin{itemize}
+\item Balanceando el tamaño de los bloques remanentes
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgaa8c941}]{Compactación}
+\begin{itemize}
+\item Independientemente del esquema que elijamos, bajo particiones
+flexibles se irá fragmentando cada vez más la memoria
+\begin{itemize}
+\item Si no se hace nada al respecto, no podrán lanzarse procesos nuevos
+\end{itemize}
+\item La \emph{compactación} consiste en:
+\begin{itemize}
+\item Suspender temporalmente a un proceso
+\item \emph{Moverlo} a otra dirección de memoria
+\item Ajustar su \emph{registro base}
+\item Continuar con el siguiente, hasta crear un sólo bloque disponible
+(de los muchos existentes)
+\end{itemize}
+\item Tiene un costo alto, porque requiere:
+\begin{itemize}
+\item Muchas transferencias de memoria
+\item Suspensión sensible de los procesos implicados
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5a03f53}]{Compactación}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/ditaa/compactacion_memoria.png}
+\caption{Compactación de la memoria de procesos en ejecución}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org8fd69e1}]{¿Cuándo compactar?}
+\begin{center}
+No hay una sóla respuesta
+\end{center}
+\begin{itemize}
+\item Basado en umbrales, verificando periódicamente el estado del sistema
+\item Basado en eventos, cada vez que no pueda satisfacerse una solicitud
+por haber demasiada fragmentación
+\end{itemize}
+\begin{center}
+Señales que indican necesidad de compactar
+\end{center}
+\begin{itemize}
+\item Relación entre el número de bloques libres y ocupados
+\item Relación entre la memoria total disponible y el tamaño del bloque
+más grande
+\item \ldots{}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb926421}]{Intercambio (\emph{swap})}
+\begin{itemize}
+\item El SO puede \emph{comprometer} más memoria de la que tiene disponible
+\item Cuando inicia un sistema que \emph{no cabe en memoria}, puede elegir
+suspender a un proceso y \emph{grabarlo a almacenamiento secundario}
+\begin{itemize}
+\item Por ejemplo, un proceso que esté bloqueado esperando un bloqueo
+externo
+\end{itemize}
+\item ¿Qué pasa con las operaciones E/S que tiene pendientes el proceso?
+\begin{itemize}
+\item Puede exigirse que sólo se pueda hacer E/S empleando buffers en
+el espacio del SO
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6f9e4ba}]{Costos del intercambio}
+\begin{itemize}
+\item Esta modalidad de swap fue popular en equipos de escritorio de
+fines de los 1980 y principios de 1990
+\begin{itemize}
+\item Entre 1 y 8MB RAM
+\end{itemize}
+\item Hoy en día resultarían inaceptablemente lentos
+\begin{itemize}
+\item Si un proceso ocupa 100MB
+\item Y la tasa de transferencia sostenida al disco duro es de 50MB/s
+\begin{itemize}
+\item SATA ofrece máximos entre 150 y 600 MB/s (dependiendo de la
+generación)
+\item Pero típicamente hay varios procesos compitiendo por el acceso
+\end{itemize}
+\item Suspender el proceso a disco toma un mínimo de 2s \emph{de acceso
+exclusivo}
+\item Traerlo de vuelta a memoria, otros 2s
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Segmentación}
+\label{sec:org0a54620}
+\begin{frame}[label={sec:orgdaa4c29}]{¿Cómo es la visión del programador?}
+\begin{itemize}
+\item El trabajo del compilador es traducir lo que ve/entiende el
+programador a algo que pueda entender la computadora
+\item Para el programador, la memoria no es un \emph{espacio contiguo}, sino
+que hay separaciones muy claras
+\begin{itemize}
+\item El programador no tiene por qué ver relación entre las secciones
+de texto y datos
+\item No tiene por qué preocuparse de la \emph{cercanía} entre el \emph{espacio de
+libres} y la \emph{pila}
+\item No tiene por qué importarle la estructura representada en la pila
+\item Las bibliotecas externas enlazadas son meras \emph{cajas negras}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org215f637}]{Traduciendo la visión del programador}
+\begin{itemize}
+\item \ldots{}¿No podría traducirse esta separación a algo generado por el
+compilador?
+\begin{itemize}
+\item Y que, de paso, pueda aprovechar el sistema\ldots{}
+\end{itemize}
+\item El espacio de un proceso se traduce en \emph{varios segmentos} en memoria
+\begin{itemize}
+\item En vez de sólo un registro \emph{base} y un registro \emph{desplazamiento},
+requerimos de uno por segmento
+\begin{itemize}
+\item Una \emph{tabla de segmentos} por proceso.
+\item Típicamente, un juego de \emph{registros especiales} en el CPU
+\end{itemize}
+\item La resolución de direcciones es análoga a la descrita
+anteriormente, con apoyo del MMU
+\item El direccionamiento se hace \emph{explícitamente} indicando segmento y
+desplazamiento
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga100ffd}]{Conceptualización de la segmentación}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/dot/segmentacion_de_memoria.png}
+\caption{Ejemplo de segmentación (Silberschatz, p.305)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org5df9f70}]{Facilidades que nos brinda la segmentación}
+\begin{itemize}
+\item Ayuda a incrementar la \emph{modularidad} de nuestro programa, incluso
+facilita el proceso de carga
+\begin{itemize}
+\item Aún tiene que efectuarse la resolución de direcciones, pero puede
+delegarse parcialmente al MMU (en tiempo de ejecución)
+\end{itemize}
+\item Permite especificar \emph{permisos diferenciados} por tipo de memoria
+\begin{itemize}
+\item Restringir escritura en segmentos de texto
+\item Restringir ejecución en segmentos \emph{no} de texto
+\item Mejora la seguridad del sistema resultante
+\begin{itemize}
+\item Ojo: No es magia, siguen existiendo muchos \emph{vectores de ataque}
+que explotan el acomodo en memoria
+\end{itemize}
+\end{itemize}
+\item Hace más simple / conveniente el manejo del intercambio (swap)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5ddd5d1}]{Intercambio (swap) parcial}
+\begin{itemize}
+\item Integrando la operación del SO y el MMU, pueden intercambiarse a
+disco \emph{algunos} de los segmentos de un proceso
+\item Es muy probable que no todos los segmentos de un proceso sean
+usados \emph{aproximadamente} al mismo tiempo, p.ej.:
+\begin{itemize}
+\item Bibliotecas de importación/exportación de archivos, no son
+empleadas durante una ráfaga de cálculo
+\item Bibliotecas de comunicación por red, no son empleadas mientras se
+prepara un archivo para su almacenamiento
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1a27e83}]{Decidiendo qué y cuándo intercambiar}
+\begin{itemize}
+\item El proceso puede indicar al CPU que no requiere por el momento
+determinado segmento
+\item El SO puede elegir, según ciertas métricas, cuál segmento mandar a
+disco
+\begin{itemize}
+\item El más estorboso (grande)
+\item Apelando a la localidad de referencia: El \emph{Menos Recientemente
+Utilizado} (\emph{LRU}, \emph{Least Recently Used})
+\end{itemize}
+\item El MMU debe indicar al SO cuando el proceso solicita acceso a un
+segmento intercambiado
+\begin{itemize}
+\item El SO suspende al proceso y carga al segmento de vuelta a memoria
+\item \ldots{}Aunque con poca memoria disponible, eso puede llevar a que
+intercambie un segmento de otro proceso (o del mismo)
+\begin{itemize}
+\item Volveremos a este punto al hablar de la \emph{memoria virtual}
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org44a27ca}]{Rendimiento del intercambio}
+\begin{itemize}
+\item Cada uno de los segmentos de un proceso es (obviamente) más chico
+que el proceso completo
+\begin{itemize}
+\item La sobrecarga por transferir un segmento de/a disco es mucho menor
+\end{itemize}
+\item El proceso puede seguir ejecutándose incluso si está parcialmente
+intercambiado
+\item El SO puede aprovechar los permisos para reducir muchas veces a la
+mitad el tiempo necesario para el intercambio
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org292e6b2}]{Reduciendo la transferencia basasda en permisos}
+\begin{itemize}
+\item Cuando un segmento no tiene permiso de escritura, sabemos que el
+proceso no puede cambiarlo
+\item Una vez que fue intercambiado, si el SO mantiene el espacio en
+disco "reservado", no requiere volver a ser escrito
+\begin{itemize}
+\item Tenemos garantía de que se mantendrá sin modificaciones
+\end{itemize}
+\item Bajo ciertos supuestos, podemos incluso ahorrar la copia inicial
+\begin{itemize}
+\item Cuando el segmento proviene de una biblioteca \emph{reposicionable} y
+la imagen en disco es idéntica a la imagen en memoria, el archivo
+es un volcado directo del segmento
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7081a0f}]{Ejemplificando}
+\begin{center}
+Si un proceso tiene la siguiente tabla de procesos, veamos la
+respuesta del MMU a diversas solicitudes
+\end{center}
+\begin{center}
+\begin{tabular}{rrrll}
+Segmento & Inicio & Tamaño & Permisos & Presente\\
+\hline
+0 & 15208 & 160 & RWX & sí\\
+1 & 1400 & 100 & R & sí\\
+2 & 964 & 96 & RX & sí\\
+3 & - & 184 & W & no\\
+4 & 10000 & 320 & RWX & sí\\
+\end{tabular}
+\end{center}
+
+\begin{center}
+{\scriptsize
+R = Lectura; W = Escritura; X = Ejecución
+
+El segmento 3 está en espacio de intercambio (Inicio nulo,
+presente=no).
+}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org77610b3}]{Respuesta al atrapar una excepción}
+\begin{itemize}
+\item Una excepción puede \emph{lanzarse} ante diversas circunstancias
+\item Vemos a continuación algunos ejemplos
+\item El OS debe reaccionar de diferente forma ante cada una de ellas
+\begin{itemize}
+\item El acceso a un \emph{segmento faltante} debe llevar a suspender el
+proceso y traer el segmento de vuelta a memoria
+\item Una violación de seguridad, o un acceso fuera de rango,
+normalmente llevarán a que el proceso sea terminado con una
+\emph{falla de segmentación} (\emph{segmentation fault})
+\end{itemize}
+\item \emph{Ojo}: Puede presentarse más de un evento a la vez. ¿Cómo debemos
+reaccionar ante ello?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3d822e7}]{Ejemplificando}
+\begin{center}
+\begin{tabular}{rll}
+Dirección & Tipo de & Dirección\\
+virtual & acceso & física\\
+\hline
+0-100 & R & 15308\\
+2-84 & X & 1048\\
+2-84 & W & Atrapada: Violación de seguridad\\
+2-132 & R & Atrapada: Desplazamiento fuera de rango\\
+3-16 & W & Atrapada: Segmento faltante\\
+3-132 & R & Atrapada: Segmento faltante;\\
+ &  & violación de seguridad\\
+4-128 & X & 10130\\
+5-16 & X & Atrapada: Segmento invalido\\
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org8660618}]{Limitaciones de la segmentación}
+\begin{itemize}
+\item Número y semántica de segmentos disponible en la arquitectura
+\begin{itemize}
+\item En Intel 8086, 6 registros de segmento, mas un \emph{desplazamiento},
+dan el espacio de direccionamiento de 20 bits (1MB); (extendido a
+partir de 80386):
+\begin{description}
+\item[{CS}] \emph{Code Segment} (sección de texto)
+\item[{DS}] \emph{Data Segment} (sección de datos)
+\item[{SS}] \emph{Stack Segment} (pila de llamadas)
+\item[{ES, FS, GS}] \emph{Extra Segment} (cualquier otro acceso)
+\end{description}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9b7ac23}]{¿Qué tanto se aprovecha \emph{en verdad}?}
+\begin{itemize}
+\item El código que mejor aprovecha una arquitectura de segmentación es
+\emph{muy difícil} de transportar a otra arquitectura
+\begin{itemize}
+\item El compilador puede generar acorde a la arquitectura objetivo,
+pero\ldots{} ¿Qué tanto beneficia al \emph{programador}?
+\item Recuerden que para eso se presentó (supuestamente)\ldots{}
+\end{itemize}
+\item Técnicas para direccionar más memoria de la que podemos \emph{comprender}
+\begin{itemize}
+\item El Pentium Pro (1995) permite, a través de segmentación, ver 36
+bits (64GB) de memoria en una arquitectura de 32 bits
+\item En PowerPC, hay 16 segmentos de 24 bits, que permiten direccionar
+hasta 52 bits
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf7acc11}]{La segmentación hoy}
+\begin{itemize}
+\item La segmentación va cayendo en desuso en casi todas las arquitecturas
+modernas
+\begin{itemize}
+\item Incluso en x86: Al entrar en modo de 64 bits, se inhabilitan
+\emph{casi} todos los registros de segmento (quedan FS y GS)
+\end{itemize}
+\item Es muy susceptible a fragmentación (interna y externa)
+\begin{itemize}
+\item Es natural, al tener cada proceso no uno, sino que varios bloques
+en memoria
+\item Fragmentación interna \rarrow 0 en secciones de datos y texto,
+pero alta en libres, pila
+\end{itemize}
+\item Prácticamente todos los sistemas modernos emplean un esquema de
+\emph{memoria plana} mediante \emph{paginación}
+\begin{itemize}
+\item \ldots{}Que es, precisamente, el siguiente tema
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Paginación}
+\label{sec:org404c71b}
+
+\begin{frame}[label={sec:orgcb055d9}]{Evitando la fragmentación externa}
+\begin{itemize}
+\item La paginación nace para evitar \emph{definitivamente} la fragmentación
+externa
+\begin{itemize}
+\item Y, por tanto, la necesidad de compactación
+\end{itemize}
+\item Requiere hardware más especializado y dar seguimiento a mucha más
+información
+\item Simplifica fuertemente las cosas desde el punto de vista del proceso
+\begin{itemize}
+\item A costo de complicarlas para el SO
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9bb0bdf}]{Adios a los registros base+desplazamiento}
+\begin{itemize}
+\item Al proceso se le muestra únicamente una \emph{representación lógica} de
+la memoria
+\item Para cada proceso, el espacio de direccionamiento comienza en 0, y
+llega hasta el máximo posible de la arquitectura
+\item La memoria está dividida en una serie de \emph{páginas}, todas ellas del
+mismo tamaño
+\begin{itemize}
+\item Históricamente desde 512 bytes (\(2^9\))
+\item Típicamente 4 u 8K (\(2^{12}\) o \(2^{13}\))
+\item Máximos hoy, 16MB (\(2^{24}\))
+\end{itemize}
+\item La memoria asignada ya no requiere ser contigua
+\begin{itemize}
+\item A pesar de usar un \emph{modelo plano} (no segmentado)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga94e079}]{Esquematización del proceso de paginación}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/dot/hardware_de_paginacion.png}
+\caption{Esquema del proceso de paginación, ilustrando el papel del MMU}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org11f616f}]{Ubicación física y lógica \rarrow Marcos y páginas}
+\begin{itemize}
+\item Cada página corresponde a un \emph{marco} (\emph{frame}) en la memoria física
+\begin{itemize}
+\item Relacionados a través de \emph{tablas de páginas}
+\item Los marcos \emph{siempre} miden lo mismo que las páginas
+\item El tamaño siempre será una potencia de 2
+\end{itemize}
+\item La ubicación real de un \emph{marco} de memoria es su \emph{ubicación física}
+\item La dirección que conoce el proceso es su \emph{ubicación lógica}
+\item La porción \emph{más significativa} de una dirección de memoria indica
+la página; la \emph{menos significativa}, el desplazamiento
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5df8068}]{Ejemplo de página y desplazamiento}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/direccion_a_pag_y_despl.png}
+\caption{Página y desplazamiento, en un esquema de direccionamiento de 16 bits y páginas de 512 bytes}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org7c582bf}]{La tabla de páginas (\emph{page table})}
+\begin{itemize}
+\item Guarda la relación entre cada \emph{página} y el \emph{marco} correspondiente
+\item El MMU no puede ya operar basado en unos cuantos registros
+\begin{itemize}
+\item En un esquema limitado como el recién presentado, tenemos hasta
+128 páginas (\(2^7\))
+\item Cada entrada requiere 14 bits (7 para la página, 7 para el marco)
+\item \rarrow 1792 bytes (en un sistema bastante primitivo)
+\end{itemize}
+\item El manejo de una tabla de páginas resulta en una suerte de
+resolución en tiempo de ejecución
+\begin{itemize}
+\item Pero realizada por el MMU, transparente al programa (e incluso al
+procesador)
+\item Con una \emph{dirección base} distinta para cada una de las páginas
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgfcbf1df}]{Ejemplo (minúsculo) de tabla de páginas}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/ejemplo_de_paginacion.png}
+\caption{Ejemplo de paginación (Silberschatz, p.292)}
+\end{figure}
+\end{column}\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Direccionamiento: 5 bits
+\item Página: 3 bits
+\item Desplazamiento: 2 bits
+\item Para referirse a la letra \emph{f}: \pause
+\begin{enumerate}
+\item Dirección 00101 (5) \pause
+\item Página 001 (1), posición 01 (1) \pause
+\item MMU: Página 001 \rarrow marco 6 (110) \pause
+\item Dirección física: 11001 (26)
+\end{enumerate}
+\end{itemize}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org0edfc72}]{Permisos y validez}
+\begin{itemize}
+\item Al emplear memoria paginada, seguimos manteniendo los modos de
+\emph{permisos diferenciados} de la segmentación
+\begin{itemize}
+\item Lectura, escritura, ejecución (RWX)
+\end{itemize}
+\item En vez de aplicarse a segmentos, se aplican página por página
+\item Muchas veces, \emph{la cantidad de bits} necesaria para alinear las
+tablas con el acceso a memoria
+\item Un bit adicional: Página válida / inválida
+\begin{itemize}
+\item El espacio total de direccionamiento disponible al proceso es muy
+grande (32/64 bits)
+\item Indica cuáles páginas tiene asignadas el proceso y cuáles están
+libres
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org95c473b}]{Efecto ante la fragmentación}
+\begin{itemize}
+\item La fragmentación externa desaparece
+\begin{itemize}
+\item O más bien, nos deja de preocupar
+\end{itemize}
+\item ¿Y la fragmentación interna?
+\end{itemize}
+\pause
+\begin{itemize}
+\item Al dividirse la memoria en bloques de \(2^n\) bytes, cada proceso
+desperdiciará en promedio \(\frac{2^n}{2}\) bytes
+\begin{itemize}
+\item Peor caso: \(2^n-1\) bytes
+\end{itemize}
+\item Podemos tener cientos o miles de procesos en el sistema
+\end{itemize}
+\pause
+\begin{itemize}
+\item Respuesta lógica: Hagamos a \(n\) tan pequeño como sea posible
+\item Muchas páginas, muy pequeñas\ldots{} \pause ¿O no?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8078af7}]{Impacto del tamaño de las páginas}
+\begin{center}
+¿En qué se expresaría la \emph{sobrecarga administrativa} de tener páginas
+demasiado pequeñas?
+\end{center}
+\begin{itemize}
+\item Mayor carga en un cambio de contexto
+\begin{itemize}
+\item Crecimiento del PCB
+\end{itemize}
+\item Mayor número transferencias DMA requerido (p.ej. para leer/escribir
+del disco)
+\item Disminución de velocidad de \emph{todas} las transferencias a memoria
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4eeabea}]{Impacto en las transferencias DMA}
+\begin{itemize}
+\item Es mucho más eficiente hacer una transferencia larga que varias
+cortas
+\begin{itemize}
+\item Recordemos: Una transferencia DMA se \emph{inicia} indicando:
+\begin{itemize}
+\item Dirección física base de memoria
+\item Cantidad de datos a transferir
+\item \emph{Puerto} del dispositivo
+\item \emph{Dirección} de la transferencia
+\end{itemize}
+\end{itemize}
+\item Tenemos que hacer (como máximo) transferencias del tamaño de la
+página en memoria
+\begin{itemize}
+\item Es poco probable que las páginas lógicamente consecutivas estén
+físicamente contiguas
+\end{itemize}
+\item Fragmentar la memoria física en páginas muy pequeñas reduce la
+velocidad de transferencia de disco
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5c0f958}]{Impacto en el PCB}
+\begin{center}
+Volvamos a hacer cuentas:
+
+¿Cuánto pesa cada esquema de asignación de memoria?
+\end{center}
+\begin{description}
+\item[{Partición fija}] Un \emph{registro base} para indicar el \emph{inicio} del
+espacio del proceso
+\item[{Partición flexible}] Un registro base y un \emph{registro límite} para
+indicar su tamaño total
+\item[{Segmentación}] Varios registros \emph{de segmento} (p.ej. 6 en x86)
+\item[{Paginación}] Modelo presentado (128 páginas de 512 bytes, espacio
+de direccionamiento de 16 bits): 1792 bytes
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:orgc1a2ed7}]{¿Cuánto ocuparía en una computadora real actual?}
+\begin{center}
+Computadora sencilla actual: Páginas de 4096 bytes (\(2^{12}\)), espacio
+de direccionamiento de 32 bits\ldots{}
+\end{center}
+\pause
+\begin{itemize}
+\item 1,048,576 páginas (\(2^{20}\))
+\end{itemize}
+\pause
+\begin{itemize}
+\item Cada entrada de 40 bits (20 para la página, 20 para el marco)
+\end{itemize}
+\pause
+\begin{itemize}
+\item \(\frac{40}{8} \times 1048576\) \rarrow ¡¿5MB para la tabla de páginas?!
+\end{itemize}
+\pause
+\begin{itemize}
+\item \(\frac{5242880}{4096} = 1280\) \rarrow ¡¿La tabla de páginas mide
+1280 páginas?!
+\end{itemize}
+\pause
+\begin{itemize}
+\item Con memoria DDR3-14900 y transferencia pico de 15GB/s, le agrega
+0.3ms al cambio de contexto
+\begin{itemize}
+\item Quedamos en que un cambio de contexto \emph{típico} debe ser <1ms\ldots{}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgbb033fd}]{¿Cuánto ocuparía en una computadora real actual?}
+\begin{center}
+\ldots{} ¿Quién se aventura a sacar números para un sistema de 64 bits?
+
+\pause
+
+Un tip: Basta multiplicar los números de la lámina anterior por
+4,294,967,296
+\end{center}
+\end{frame}
+
+
+\begin{frame}[label={sec:org2606fdc}]{Almacenamiento de la tabla de páginas en memoria}
+\begin{itemize}
+\item Almacenar toda esta información en registros es sencillamente
+imposible
+\begin{itemize}
+\item Costo económico
+\item Tiempo perdido en el cambio de contexto
+\end{itemize}
+\item Una estrategia: Almacenar \emph{la propia tabla de páginas} en memoria
+\emph{privilegiada} (accesible únicamente para el SO, no para el proceso
+usuario)
+\begin{itemize}
+\item Emplear \emph{sólo dos} registros especiales:
+\begin{description}
+\item[{PTBR}] Registro Base de Tabla de Páginas (\emph{Page Table Base
+Register})
+\item[{PTLR}] Registro Límite de Tabla de Páginas (\emph{Page Table Limit
+Register})
+\end{description}
+\item ¿Por qué el PTLR? La mayor parte de los procesos, además, nunca
+requerirá direccionarlo completo; para no tener un mapa completo
+mayormente vacío, PTLR indica la extensión máxima empleada
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org631b467}]{Desventaja de tener la tabla de páginas en memoria:}
+\begin{itemize}
+\item Velocidad: \emph{Cada acceso a memoria} se ve penalizado con (al menos)
+un acceso adicional
+\begin{itemize}
+\item Para resolver dónde está la página que buscamos
+\end{itemize}
+\item \emph{Duplica} el tiempo efectivo de aceso a memoria \rarrow Inaceptable.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga6473be}]{\emph{TLB}: El buffer de traducción adelantada}
+\begin{itemize}
+\item ¿Respuesta? Emplear un caché
+\begin{itemize}
+\item Pero, por su frecuencia y naturaleza de uso, un caché especializado
+\end{itemize}
+\item El TLB (\emph{Translation Lookaside Buffer}) es una tabla asociativa
+(\emph{hash})
+\begin{itemize}
+\item Las consultas (\emph{llaves}) son las páginas
+\item Los \emph{valores} son los marcos correspondientes
+\item Las búsquedas se realizan en \emph{tiempo constante}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc93cb86}]{Proceso de paginación con TLB}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/dot/paginacion_con_tlb.png}
+\caption{Esquema de paginación empleando un \emph{buffer de traducción adelantada} (TLB)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org916eba8}]{Funcionamiento del TLB}
+\begin{itemize}
+\item Típicamente, entre 64 y 1024 entradas
+\begin{itemize}
+\item Busca aprovechar la \emph{localidad de referencia}
+\end{itemize}
+\item Si \emph{conoce} ya a una página (\emph{TLB hit}), el MMU traduce de inmediato
+para obtener el marco
+\begin{itemize}
+\item Silberschatz: Penalización de hasta 10\%
+\end{itemize}
+\item Si \emph{no} conoce la página (\emph{TLB miss}), lanza una falla de página
+(\emph{page fault}) y consulta en la memoria principal cuál es el marco
+correspondiente
+\begin{itemize}
+\item Penalización >120\%; la nueva página queda registrada en el TLB
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgbcd1b45}]{Reemplazo de las entradas del TLB}
+\begin{itemize}
+\item El TLB es \emph{mucho más pequeño} que el espacio de páginas del proceso
+\item Al recibir una entrada nueva, puede ser necesario reemplazar la
+entrada de una página ya conocida
+\item Reemplazar la \emph{menos recientemente utilizada} (\emph{LRU})
+\begin{itemize}
+\item Ventaja: Localidad de referencia; probablemente no la necesitemos
+pronto
+\item Desventaja: Contabilizar los accesos dentro del TLB (\emph{muy
+frecuentes}) agrega latencia y costo
+\end{itemize}
+\item Reemplazar una página al azar
+\begin{itemize}
+\item Ventaja: Más simple y barato (pero\ldots{} ¿Algo aleatorio es barato en
+el cómputo?)
+\item Desventaja: Obvia. Puede reemplazarse una página en uso frecuente
+y causar demoras
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9cd368e}]{La obesidad de las tablas de páginas}
+\begin{center}
+En un equipo moderno, incluso con TLB, el espacio de la tabla de
+páginas es demasiado grande
+\end{center}
+\begin{itemize}
+\item Como vimos, una sobrecarga de 5MB por proceso en 32 bits. Y de
+nuevo\ldots{} ¿en 64 bits?
+\item Tendríamos \(2^{42}\) entradas con páginas de 4MB (\(2^{22}\))
+\item \(2^{64} / 2^{22} = 2^{42}\) entradas, cada una ocupando 42 bits
+para la página y 42 bits para el marco
+\item \(2^{42} \times (42 + 42)\) \rarrow ¡336TB \emph{por proceso}!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org05615aa}]{Subdividiendo las tablas de páginas}
+\begin{itemize}
+\item Aprovechamos que la mayor parte del espacio de direccionamiento de
+un proceso está siempre vacío
+\item Podemos dividir una dirección de memoria en dos (o más) niveles)
+\item Por ejemplo, una dirección de 32 bits:
+\begin{description}
+\item[{Tabla externa}] 10 bits (1024 entradas; 1024 × (10 + 10) bits
+2560 bytes)
+\item[{Tabla interna}] 10 bits cada una (2560 bytes cada una)
+\item[{Desplazamiento}] 12 bits (dentro de cada página/marco)
+\end{description}
+\item Sólo se crean las tablas internas que sean necesarias
+\item El TLB guarda la resolución para los \emph{20 bits} de ambas tablas
+\begin{itemize}
+\item O los 54 bits correspondientes en una arquitectura de 64 bits
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6942d29}]{Tablas de páginas con varios niveles}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/dot/paginacion_jerarquica.png}
+\caption{Paginación en dos niveles: 10+10 bits, con marcos de 12 bits.}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org2dd93aa}]{Los costos de los niveles adicionales}
+\begin{itemize}
+\item Este esquema hace \emph{tratable} el direccionamiento de grandes
+cantidades de memoria
+\begin{itemize}
+\item Pueden agregarse tres, cuatro, cinco niveles\ldots{}
+\end{itemize}
+\item Pero una \emph{falla de página} puede ahora \emph{triplicar} el tiempo de
+acceso a memoria en vez de duplicarlo
+\begin{itemize}
+\item Porque hace falta consultar a la \emph{tabla externa} y a la \emph{tabla interna}
+\end{itemize}
+\item En una arquitectura de 64 bits dividida en páginas en incrementos 10
+bits\ldots{} \emph{Septuplicamos} el tiempo de acceso
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd399141}]{Tablas de páginas con \emph{funciones digestoras} (\emph{hash})}
+\begin{center}
+¿Qué es una \emph{función digestora}?
+
+\(H: U\rightarrow M\)
+\end{center}
+\begin{itemize}
+\item Una función que \emph{mapea} o \emph{proyecta} al conjunto \(U\) en un conjunto
+\(M\) mucho menor
+\item La \emph{distribución resultante} en \(M\) debe resultar homogenea
+\item Tan poco dependiente de la secuencialidad de la entrada como sea
+posible
+\item Permiten hacer \emph{mapeos} a espacios muestrales mucho más pequeños
+\item Pero, en vez de apuntar a un sólo valor, deben apuntar a una \emph{lista
+ligada} de valores
+\begin{itemize}
+\item Al ser espacios más pequeños, \emph{necesariamente} pueden presentar
+colisiones
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgeb6ee6d}]{Tablas de páginas con funciones digestoras (\emph{hash})}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.65\textheight]{../img/tablas_hash.png}
+\caption{Tablas de páginas empleando funciones digestoras (Silberschatz, p. 302)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org10aaeaf}]{Características de las tablas basadas en \emph{hash}}
+\begin{itemize}
+\item Mayor complejidad \rarrow mayor latencia (¿mayor a qué?
+Seguramente, no a 7 accesos a memoria)
+\begin{itemize}
+\item Evaluación de una función matemática (hash)
+\item Posiblemente, recorrer una lista
+\end{itemize}
+\item El tamaño de la tabla puede variar según crece el uso de memoria
+del proceso
+\begin{itemize}
+\item Aunque requiera recalcular (\emph{rehash}) la tabla, es una operación
+poco frecuente
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org496608e}]{Memoria compartida (1)}
+\begin{itemize}
+\item La memoria paginada hace simple definir áreas de memoria compartida
+\item Uso muy frecuente: Comunicación entre procesos (IPC)
+\begin{itemize}
+\item Pueden compartirse estructuras complejas sin costo de copia
+\end{itemize}
+\item Acceso a los datos dentro de estas estructuras por parte de los
+procesos: Requiere protección por mecanismos de \emph{sincronización}
+\begin{itemize}
+\item Ojo: Diferencias entre memoria compartida entre procesos y memoria
+compartida entre hilos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org65a8c9a}]{Memoria compartida (2)}
+\begin{center}
+Uso más frecuente aún: Compartir \emph{código}
+\end{center}
+\begin{itemize}
+\item No tiene sentido que el SO \emph{repita} en memoria imágenes de
+bibliotecas \emph{relocalizables} y \emph{reentrantes}
+\item El mismo conjunto de marcos puede incluirse en las tablas de
+distintos procesos, aumentando la capacidad percibida de memoria
+\item Esto es lo que conocemos como \emph{bibliotecas compartidas}
+\begin{itemize}
+\item No sólo se comparten en disco — También en memoria
+\item Explican (parte de) un uso efectivo de memoria muy superior al
+100\%
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org07bfacc}]{Memoria compartida (3)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/memoria_compartida.png}
+\caption{Uso de memoria compartida: Tres procesos comparten la memoria ocupada por el texto del programa (azul), difieren sólo en los datos.}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org916d817}]{La arquitectura x86-32: Paginación + Segmentación}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/traduccion_pentium.png}
+\caption{Pasos de la traducción lógica a física en un Pentium}
+\end{figure}
+\begin{itemize}
+\item La arquitectura x86 de 32 bits permite combinar paginación y
+segmentación para alcanzar un mayor espacio de direccionamiento
+\begin{itemize}
+\item Comparable con la segmentación que permitía a la x86 llegar a 1MB RAM
+\item La segmentación fue (casi) eliminada para x86-64
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge7f12c4}]{Segmentación en x86-32}
+\begin{itemize}
+\item Hay dos tablas de segmentos, almacenadas en \emph{registros
+programables} específicos:
+\begin{description}
+\item[{LDT}] \emph{Tabla local de descriptores}, segmentos privados de cada
+uno de los procesos
+\item[{GDT}] \emph{Tabla global de descriptores}, segmentos que pueden ser
+compartidos entre diversos procesos del sistema
+\end{description}
+\item La dirección de segmento es de 16 bits
+\begin{itemize}
+\item 13 bits indican el segmento
+\item 1 bit indica si es en LDT o en GDT
+\item 2 bits son para los permisos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4b3a7ff}]{Paginación en x86-32}
+\begin{itemize}
+\item La familia Pentium (y equivalentes) pueden emplear páginas de 4KB o
+4MB
+\begin{itemize}
+\item La tabla de páginas está dividida en una externa de 10 bits y una
+interna de 10 bits (y desplazamiento, 12 bits)
+\item La \emph{tabla externa} incluye un bit que indica si apunta a una
+\emph{página grande} o a una \emph{tabla interna}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgcc6b91b}]{Paginación en x86-32}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.65\textheight]{../img/paginas_en_pentium.png}
+\caption{Paginación en x86-32 (silberschatz, p.309)}
+\end{figure}
+\end{frame}
+\end{document}

@@ -1,0 +1,571 @@
+% Created 2023-02-06 Mon 12:03
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Introducción a los sistemas operativos}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Introducción a los sistemas operativos},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{¿Qué son y qué hacen?}
+\label{sec:orgf37f9c8}
+
+\begin{frame}[label={sec:orgf0abfe9}]{¿Qué es un sistema operativo?}
+\begin{itemize}
+\item El \emph{sistema base} de una computadora \pause
+\item El programa que \emph{siempre corre} \pause
+\item Gestor de los \emph{recursos} del sistema \pause
+\item Lo que define \emph{qué es compatible} y \emph{qué no} dentro de una
+determinada arquitectura \pause
+\item El programa \emph{menos importante} de todos \pause
+\begin{itemize}
+\item No realiza \emph{trabajo útil}, sino que permite que \emph{otros} lo hagan
+\end{itemize}
+\item …
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgbdc3bdb}]{…¿Qué \emph{no} es?}
+\begin{itemize}
+\item Los programas básicos para administrar archivos
+\item La forma en que el usuario \emph{lanza} programas
+\item El ambiente con que interactúa el usuario
+\begin{itemize}
+\item Entorno gráfico
+\item Línea de comando
+\item …
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0bf9e3e}]{¿Qué brinda al \emph{programador}?}
+\begin{itemize}
+\item Abstracción
+\begin{itemize}
+\item \emph{Embellecimiento} -Finkel
+\item \emph{Virtualización} -Arpaci-Dusseau
+\end{itemize}
+\item Gestión de recursos
+\item Aislamiento y protección
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org7f21f41}]{Abstracción}
+\begin{center}
+Proporciona \emph{abstracciones consistentes} y \emph{simplificaciones} a los
+procesos del usuario
+\end{center}
+\begin{itemize}
+\item Archivos y directorios
+\item \emph{Flujos de caracteres} (entrada/salida)
+\item Dispositivos, conexiones de red, contacto con el \emph{mundo exterior}
+\item El concepto mismo de \emph{proceso}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgdc8b8f5}]{Gestión de recursos}
+\begin{center}
+Administra los \emph{recursos existentes} en la computadora, permitiendo la
+ejecución a los diversos procesos
+\end{center}
+\begin{itemize}
+\item Cómo comparten los diversos procesos los recursos existentes (y
+rivales)
+\item Políticas de asignación (y recuperación) justas
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgcc46968}]{Aislamiento y protección}
+\begin{center}
+Protección de los datos, de los recursos, de los procesos
+\end{center}
+\begin{itemize}
+\item Entre procesos
+\item Entre usuarios
+\item Ante procesos \emph{mal comportados}
+\item Ante procesos maliciosos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgdeec494}]{Ahora sí… ¿Qué es un sistema operativo?}
+\begin{itemize}
+\item El principal programa que corre en una computadora de propósito
+general
+\item Provee una serie de abstracciones básicas a los programas
+\begin{itemize}
+\item Pueden haber diferentes sistemas operativos, definiendo distintas
+\emph{interfaces}, sobre el mismo hardware
+\item Un mismo sistema operativo puede \emph{adecuarse a} distintas
+arquitecturas de hardware
+\end{itemize}
+\item Ofrece una infraestructura de gestión, aislamiento y protección de
+recursos
+\item Permite la implementación de \emph{entornos operativos}
+\end{itemize}
+\end{frame}
+
+\section{Historia y evolución}
+\label{sec:org4a27faf}
+
+\begin{frame}[label={sec:org219a62d}]{Construyendo a través de la historia}
+\begin{center}
+Para comprender lo que hoy gestionan los sistemas operativos,
+comencemos viendo cómo es que llegaron a gestionarlo.
+\vfill
+Vamos con un repaso histórico de la historia de la computación,
+enfocados a las \emph{inovaciones} de cada etapa
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org2dee163}]{En el principio…}
+\begin{itemize}
+\item Arquitectura \emph{von Neumann} (programa almacenado)
+\item Programación directa y explícita para el hardware
+\item Tiempo de programación \(\rightarrow\) tiempo \emph{no productivo}
+\(\rightarrow\) desperdicio de recursos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3b0901a}]{Sistemas de proceso por lotes (\emph{batch processing})}
+\begin{itemize}
+\item Los programadores codifican su código en un medio de almacenamiento
+(\emph{tarjetas perforadas})
+\item Entregan los tambaches (\emph{batches}) a los operadores
+\item Los operadores cargan secuencialmente los trabajos, entregan los
+resultados conforme se presentan
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1566b45}]{Sistemas monitor en el proceso por lotes}
+\begin{itemize}
+\item Implementan protección evitando la corrupción de \emph{otros trabajos}
+\begin{itemize}
+\item Interactuar con el lector de tarjetas (corrompiendo el siguiente
+programa)
+\item Temporizadores y alarmas para evitar ciclos infinitos
+\end{itemize}
+\item Estas medidas de protección requieren \emph{modificación del hardware}
+\begin{itemize}
+\item Noción de \emph{instrucciones privilegiadas}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgcac3de4}]{Sistemas en lotes con \emph{spool}}
+\begin{itemize}
+\item ¿Spool? Bobina, o \emph{Simultaneous Peripherial Operations On-Line}
+\item Cintas magnéticas
+\begin{itemize}
+\item Carga intermedia de tarjeta a cinta
+\item Resultados a cinta para posterior impresión
+\end{itemize}
+\item Liberando los trabajos más lentos
+\begin{itemize}
+\item Empleo de equipos \emph{periféricos} especializados
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8ae1374}]{Sistemas multiprogramados}
+\begin{itemize}
+\item Diferentes etapas en la vida de un proceso: \emph{limitado por CPU},
+\emph{limitado por entrada-salida}
+\item Para maximizar el uso de recursos, ejecutar \emph{simultáneamente} varios
+procesos
+\begin{itemize}
+\item Requiere cambios fuertes en el hardware
+\item Protección de recursos — Espacio de memoria
+\item Recursos \emph{estrictamente secuenciales} requieren \emph{bloqueos} para
+ofrecer \emph{acceso exclusivo}
+\end{itemize}
+\item El monitor es invocado con mucha mayor frecuencia por los
+temporizadores
+\begin{itemize}
+\item \emph{Cambios de contexto}
+\end{itemize}
+\item Interacción con el equipo: Se mantiene como el modelo en lotes
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0cfb4d1}]{Sistemas de tiempo compartido}
+\begin{itemize}
+\item 1960s: Sistemas \emph{interactivos} y \emph{multiusuarios}
+\item Manejo de \emph{terminales} para la interacción (teletipos, CRTs)
+\item Abstracciones de almacenamiento: Archivos, directorios en discos
+\item Ventajas al programador:
+\begin{itemize}
+\item Interacción directa con el equipo
+\item Edición interactiva
+\item Compilación parcial
+\item Ejecución inmediata
+\item Bibliotecas de sistema
+\end{itemize}
+\item Complejidad técnica
+\begin{itemize}
+\item Requisito de múltiples cambios de contexto por segundo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge2d4131},fragile]{Tipos de multitarea}
+ \begin{description}
+\item[{\emph{Cooperativa} o \emph{no apropiativa}}] (cooperative multitasking) Cada
+proceso tiene control del CPU hasta que efectúa una \emph{llamada al
+sistema} o indica al sistema que puede tomar el control (\texttt{yield})
+
+\item[{\emph{Preventiva} o \emph{apropiativa}}] (preemptive multitasking) El reloj
+del sistema interrumpe la ejecución de cada proceso transfiriendo
+\emph{forzosamente} el control al sistema operativo
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org5a0aaa7}]{Clases de procesos}
+\begin{center}
+¿Qué procesos son más importantes?
+\end{center}
+\begin{description}
+\item[{Procesos interactivos}] El usuario tiene la \emph{experiencia} de la demora
+\item[{Del sistema}] Procesos no postergables
+\item[{Por nivel de usuario}] Hay usuarios más importantes que otros
+\item[{\emph{…Asegún el sapo}}] Cada situación puede ameritar una política
+diferente
+\end{description}
+\begin{center}
+Los procesos se organizan en \emph{colas de prioridad} según las políticas
+requeridas por cada sistema
+\end{center}
+\end{frame}
+
+\section{Computadoras personales}
+\label{sec:orgf23cc6d}
+\begin{frame}[label={sec:org36d6798}]{Nacimiento de las computadoras personales}
+\begin{itemize}
+\item En los 1970s comienzan a aparecer las computadoras personales
+\item En un principio, programadas a través de \emph{switches}, con resultados
+a través de LEDs
+\end{itemize}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{../img/altair.jpg}
+\caption{Microcomputadora Altair 8800 (1975, \(\approx\) US\$600)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org512f023}]{La era de los 8 bits (\(\approx 1977 - 1985\))}
+\begin{columns}\begin{column}{0.6\textwidth}
+\begin{itemize}
+\item \emph{Microprocesadores} de 8 bits y miniaturización
+\begin{itemize}
+\item Salida a video (tipo TV)
+\item Entrada por teclado
+\item Entrada opcional por cinta, primeros \emph{diskettes} (discos
+\emph{flexibles})
+\end{itemize}
+\item Programación en BASIC (intérprete en ROM)
+\end{itemize}
+\end{column} \begin{column}{0.4\textwidth}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/commodore_pet.jpg}
+\caption{Commodore Pet 2001 (1977)}
+\end{figure}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org5295519}]{La era de los 8 bits (\(\approx 1977 - 1985\))}
+\begin{itemize}
+\item Comienzan a manejarse \emph{dispositivos}: Unidades de cinta, unidades de
+disco, impresoras, modems, etc.
+\item Muchas arquitecturas mutuamente incompatibles
+\item Separan el \emph{entorno de desarrollo} del \emph{entorno de ejecución}
+\begin{itemize}
+\item Nace la \emph{distribución de binarios}
+\end{itemize}
+\item Explosión de la industria de los videojuegos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2ca4b8d}]{La microcomputadora \emph{seria}: Familia PC (1981)}
+\begin{columns}\begin{column}{0.3\textwidth}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ibmpc.jpg}
+\caption{Computadora IBM PC modelo 5150 (1981)}
+\end{figure}
+\end{column}\begin{column}{0.6\textwidth}
+\begin{itemize}
+\item Primer computadora de una empresa \emph{seria}, orientada a su uso en
+ambiente empresarial
+\begin{itemize}
+\item Sin color ni audio\ldots{} \emph{¿Para qué?}
+\end{itemize}
+\item Entorno primario de ejecución: \emph{Línea de comando} (PC-DOS, MS-DOS)
+\item Al día de hoy sigue siendo la arquitectura predominante
+\end{itemize}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:orga1d57ec}]{Entorno gráfico (WIMP) (1984)}
+\begin{columns}\begin{column}{0.3\textwidth}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/mac128.png}
+\caption{Apple Macintosh (1984)}
+\end{figure}
+\end{column}\begin{column}{0.6\textwidth}
+\begin{itemize}
+\item Ventanas, iconos, menúes, apuntador (\emph{Windows, Icons, Menus,
+Pointer})
+\item 1984: Apple Macintosh, primer sistema WIMP con éxito comercial
+\item Multiprocesos, \emph{no multitarea}
+\end{itemize}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org8688c89}]{Multitarea preventiva (1985)}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{itemize}
+\item Multitarea preventiva real: 1985 (Amiga, Atari ST)
+\begin{itemize}
+\item Sin hardware de protección de memoria
+\end{itemize}
+\item Los programadores \emph{tienen que considerar la concurrencia}
+\end{itemize}
+\end{column}\begin{column}{0.4\textwidth}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/A500.jpg}
+\caption{Commodore Amiga 500 (1987)}
+\end{figure}
+\end{column}\end{columns} \pause
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=2.5em]{../img/guru_meditation.png}
+\caption{La \emph{meditación del gurú}}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org98044a6}]{La profesionalización del escritorio}
+\begin{itemize}
+\item Fines de los 1980 — Intel 80486, Motorola 68040, PowerPC: Hardware
+tan capaz como el de las \emph{estaciones de trabajo}
+\item Reducción de las arquitecturas alternativas
+\item Reemplazo paulatino de los sistemas operativos por otros más capaces
+(o mejor \emph{mercadeados})
+\begin{itemize}
+\item Mención breve de casos: DOS, Windows y OS/2; AmigaOS y Atari ST;
+NeXT y MacOS
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc6f3e6e}]{Convergen Unix y las computadoras \emph{humildes}}
+\begin{itemize}
+\item Unixes históricos para computadoras personales: Xenix, A/UX, SCO.
+\begin{itemize}
+\item Muy limitados por su hardware
+\item Precio desproporcionadamente alto; mejor ir por una \emph{estación de
+trabajo}
+\end{itemize}
+\item Génesis del software libre \emph{ideológico}: GNU (1984)
+\item 386/BSD: Primer sistema \emph{casi} libre
+\item Linux (1991+); GNU/Linux
+\item El mundo *BSD
+\item \ldots{}Eventual muerte de las estaciones de trabajo
+\begin{itemize}
+\item Apollo, Digital, Sun, SGI, HP (PA/RISC), …
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Dispositivos móviles}
+\label{sec:orgd52164d}
+\begin{frame}[label={sec:orgc15fd37}]{El mercado de los dispositivos (\emph{appliances})}
+\begin{itemize}
+\item 1990s: Agendas digitales inteligentes
+\begin{itemize}
+\item Que se van \emph{inflando} en computadoras completas
+\end{itemize}
+\item 2000s: Ruteadores, modems inteligentes, controladores de TV
+(\emph{set-top boxes})
+\item 2007+: Teléfonos celulares \emph{inteligentes}, tabletas — Por fin
+exitosos (tras incontables fracasos)
+\end{itemize}
+\begin{center}
+¿Cuál es la diferencia entre estos equipos y nuestras computadoras de
+escritorio?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org2ce7d29}]{¿Qué define a los \emph{dispositivos móviles}?}
+\begin{itemize}
+\item Bajo consumo eléctrico
+\begin{itemize}
+\item Amplios \emph{estados de ahorro de energía}
+\end{itemize}
+\item Interfaz usuario limitada
+\begin{itemize}
+\item Mecanismos de entrada reducidos
+\item Adecuación a dicha realidad en la interfaz usuario
+\end{itemize}
+\item \sout{Equipos limitados en rendimiento} \pause ¿En serio?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org39bef31}]{Primeros modelos}
+\begin{columns} \begin{column}{0.7\textwidth}
+Primer computadora \emph{portátil}: IBM 5100 (1975, 25Kg, pantalla de 5
+pulgadas, US\$9,000)
+\end{column} \begin{column}{0.3\textwidth}
+\begin{center}
+\includegraphics[width=.9\linewidth]{../img/IBM_5100.jpg}
+\end{center}
+{\tiny \href{https://commons.wikimedia.org/w/index.php?curid=16332671}{IBM 5100 (CC-BY Sandstein)}}
+\end{column} \end{columns}
+
+\begin{columns} \begin{column}{0.15\textwidth}
+\begin{center}
+\includegraphics[width=.9\linewidth]{../img/psion_organiser.jpg}
+\end{center}
+\end{column} \begin{column}{0.8\textwidth}
+1984: \emph{Psion Organiser}: Computadora de bolsillo con reloj,
+calculadora, base de datos, cartuchos de aplicaciones.  4KB RAM, 2KB
+ROM, sin sistema operativo, programada en ensamblador. Antecedente
+directo de \emph{Symbian}.
+\end{column} \end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:orged79a9b}]{1990s: El \emph{Asistente Digital Personal} (PDA)}
+\begin{columns} \begin{column}{0.15\textwidth}
+\begin{center}
+\includegraphics[width=.9\linewidth]{../img/pda_sharp.jpg}
+\end{center}
+{\tiny \href{https://en.wikipedia.org/wiki/Sharp_Wizard#/media/File:SharpElectronicOrganiser-open.jpg}{Sharp Wizard}}
+\end{column} \begin{column}{0.8\textwidth}
+1990s: Popularización de los \emph{Asistentes Digitales Personales} (PDAs)
+— Agendas de teléfonos, calendario, calculadora\ldots{} (No programables,
+rara vez expandibles)
+\end{column} \end{columns}
+
+\begin{columns} \begin{column}{0.15\textwidth}
+\begin{center}
+\includegraphics[width=.9\linewidth]{../img/apple_newton.jpg}
+\end{center}
+{\tiny \href{https://en.wikipedia.org/wiki/Apple_Newton#/media/File:Apple_Newton-IMG_0454-cropped.jpg}{Apple Newton}}
+\end{column} \begin{column}{0.6\textwidth}
+Comenzó a desarrollarse la tecnología de entrada por pantalla, con
+interfaces táctiles con \emph{stylus}, con grados de éxito\ldots{} Variables.
+
+Aparece el soporte para \emph{ecosistemas} de software, comunicación entre
+dispositivos, modos de \emph{hibernación}.
+\end{column} \begin{column}{0.15\textwidth}
+\begin{center}
+\includegraphics[width=.9\linewidth]{../img/palm_pilot.png}
+\end{center}
+{\tiny \href{https://en.wikipedia.org/wiki/Palm_(PDA)}{Palm Pilot}}
+\end{column} \end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:orgdfab061}]{1995 – 2010: Puliendo la telefonía}
+\begin{columns} \begin{column}{0.15\textwidth}
+\begin{center}
+\includegraphics[width=.9\linewidth]{../img/kyocera_6035.jpg}
+\end{center}
+{\tiny \href{https://en.wikipedia.org/wiki/Kyocera_6035#/media/File:Kyocera6035.jpg}{Kyocera 6035}}
+\begin{center}
+\includegraphics[width=.9\linewidth]{../img/n810.jpg}
+\end{center}
+{\tiny \href{https://en.wikipedia.org/wiki/Nokia_N810#/media/File:N810-open.jpg}{Nokia N810}}
+\end{column} \begin{column}{0.6\textwidth}
+\begin{itemize}
+\item Aparición de los \emph{teléfonos inteligentes}
+\item Personalidad dividida, dos computadoras en consonancia (señalización
+celular e interfaz usuario)
+\item Tendencia hacia interfaces \emph{multitouch}
+\item Enfoque en eficiencia de consumo eléctrico
+\end{itemize}
+\end{column} \begin{column}{0.15\textwidth}
+\begin{center}
+\includegraphics[width=.9\linewidth]{../img/treo.jpg}
+\end{center}
+{\tiny \href{https://es.wikipedia.org/wiki/Treo#/media/File:Treo680sp.jpg}{Palm Treo}}
+\begin{center}
+\includegraphics[width=.9\linewidth]{../img/iphone.jpg}
+\end{center}
+{\tiny \href{https://en.wikipedia.org/wiki/IPhone_3G}{iPhone}}
+\end{column} \end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org5d1cfe8}]{2010– Maduración del mercado móvil}
+\begin{itemize}
+\item Consolidación de sistemas operativos disponibles
+\begin{itemize}
+\item Dominantes: Android (\(\leftarrow\) Linux), iOS (\(\leftarrow\) MacOS)
+\item Desaparecen: Symbian, Windows Phone, Firefox OS
+\end{itemize}
+\item Universalización de la interfaz
+\begin{itemize}
+\item \ldots{}Levante la mano quien \emph{no} tiene uno consigo\ldots{}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4a4ed8b}]{Características generales del segmento}
+\begin{itemize}
+\item Almacenamiento en estado sólido (vs. discos magnéticos giratorios)
+\item Interfaz usuario: Multitarea, pero \emph{monocontexto}
+\item Consumo eléctrico
+\begin{itemize}
+\item Menor consumo
+\item Más \emph{estados de descanso}, detección de patrones de uso acorde
+\item Salto constante entre estados
+\end{itemize}
+\item No asumen estabilidad: Adecuación a un entorno cambiante
+\item Disponibilidad de aplicaciones: \emph{Jardín amurallado}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org08c4e2a}]{Arquitecturas hardware en boga hoy}
+\begin{itemize}
+\item En escritorios y servidores: Derivada de PC (Intel x86)
+\item En dispositivos embebidos ARM (ocasionalmente MIPS; ojo ⇒ OpenRISC)
+\begin{itemize}
+\item ARM como alternativa de bajo consumo para servidores
+\end{itemize}
+\item Sigue habiendo un importante espacio a controladores que no
+requieren sistema operativo (p.ej. Arduino, ARM perfiles R/M,
+ASICs\ldots{})
+\begin{itemize}
+\item Probablemente siempre lo habrá
+\end{itemize}
+\end{itemize}
+\end{frame}
+\end{document}

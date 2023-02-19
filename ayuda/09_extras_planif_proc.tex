@@ -1,0 +1,732 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Planificación de procesos: Temas relacionados}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Planificación de procesos: Temas relacionados},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Afinando al despachador}
+\label{sec:org8838d76}
+\begin{frame}[label={sec:org8271471}]{Comparando los distintos algoritmos}
+\begin{itemize}
+\item Los ejemplos que presentamos son sólo con \emph{una distribución
+arbitraria} de procesos
+\begin{itemize}
+\item Diferentes distribuciones llevarán necesariamente a distintos
+resultados
+\end{itemize}
+\item Para comparar \emph{de forma significativa} los distintos mecanismos,
+habría que analizar con muy distintas cargas
+\item Raphael Finkel compara en \emph{An operating systems vade mecum} (1988)
+lo observado en distintos conjuntos de procesos, bajo los diferentes
+mecanismos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5dc2547}]{Midiendo la respuesta de distintos algoritmos}
+\begin{itemize}
+\item Parámetros de los procesos:
+\begin{itemize}
+\item Generados de forma aleatoria, obedeciendo a distribución
+exponencial
+\item Simulación de 50,000 procesos
+\item \(\alpha = 0.8\), \(\beta = 1.0\) \rarrow \(\rho = 0.8\)
+\end{itemize}
+\item Finkel apunta a que una \emph{verdadera} comparación debería ser
+tridimensional (variando \(\rho\))
+\begin{itemize}
+\item Pero presentan ya un acercamiento útil acerca de su comportamiento
+general
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgee6c3e7}]{Proporción de penalización (P)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/penalizaciones_por_algoritmo_planificador.png}
+\caption{\label{fig:org67df13a}Proporción de penalización contra porcentaje de tiempo requerido en despachadores (Finkel, p.33)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgbe13aba}]{Tiempo \emph{perdido} (E)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/tiempo_en_espera_por_algoritmo_planificador.png}
+\caption{\label{fig:orgf168c7f}Tiempo \emph{perdido} contra porcentaje de tiempo requerido en despachadores (Finkel, p.34)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org8c7fd80}]{Duración mínima del \emph{quantum}}
+\begin{itemize}
+\item Vimos que la penalización en la ronda puede evitarse con \emph{quantums}
+mayores
+\begin{itemize}
+\item Pero puede degenerar en multiprocesamiento cooperativo
+\end{itemize}
+\item ¿Qué tan \emph{corto} debe ser un \emph{quantum}?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org822ee85}]{Duración mínima del \emph{quantum}}
+\begin{itemize}
+\item Duración de cambio de contexto \emph{hoy en día}: \(\approx 0.01ms\)
+(Silberschatz p.187)
+\begin{itemize}
+\item Con un \emph{quantum} corto, 10ms, es \(\frac{1}{1000}\) la duración del tiempo
+\emph{efectivo} de procesamiento
+\item Con un \emph{quantum} largo, 200ms, \(\frac{1}{20000}\)
+\end{itemize}
+\item No es realmente significativo — ¡Ni debe serlo!
+\begin{itemize}
+\item Perder 1\% del tiempo de cómputo en \emph{burocracia} sería en general
+visto como excesivo
+\item \emph{Ojo}: ¡El tiempo núcleo \emph{no sólo} es el tiempo del cambio de proceso!
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb41ce39}]{¿Puede acelerarse más el cambio de contexto?}
+\begin{center}
+En breve vamos a ver una posible solución (que ha caído en el olvido):
+
+\emph{Compartir} o \emph{multiplexar} el procesador \emph{a nivel hardware}
+
+\ldots{}Recordemos este punto al llegar allá.
+\end{center}
+\end{frame}
+
+
+\section{El despachador y los hilos}
+\label{sec:orgadd2cec}
+\begin{frame}[label={sec:org3427258}]{Relación entre hilos y procesos}
+\begin{center}
+¿Cómo \emph{entiende} el despachador a los hilos?
+
+Tres modelos principales de \emph{mapeo}:
+\end{center}
+\begin{itemize}
+\item Muchos a uno
+\item Uno a uno
+\item Muchos a muchos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3c019c9}]{Muchos a uno}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.25\textwidth]{../img/hilos_muchos_a_uno.png}
+\caption{Mapeo de hilos \emph{muchos a uno} (imagen: \href{http://www.cs.indiana.edu/classes/b534-plal/ClassNotes/sched-synch-details4.pdf}{Beth Plale})}
+\end{figure}
+\begin{itemize}
+\item \emph{Hilos verdes} (o \emph{de usuario})
+\item El SO ve un sólo proceso
+\begin{itemize}
+\item El tiempo se reparte dentro del proceso por mecanismos internos
+\end{itemize}
+\item Código más portable
+\item No se aprovecha \emph{realmente} el paralelismo
+\item Llamadas bloqueantes \(\rightarrow\) Todos esperan
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org203f42d}]{Uno a uno}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.25\textwidth]{../img/hilos_uno_a_uno.png}
+\caption{Mapeo de hilos \emph{uno a uno} (imagen: \href{http://www.cs.indiana.edu/classes/b534-plal/ClassNotes/sched-synch-details4.pdf}{Beth Plale})}
+\end{figure}
+\begin{itemize}
+\item Cada hilo es un \emph{proceso ligero} (\emph{lightweight process}, \emph{LWP})
+\begin{itemize}
+\item Un LWP \emph{es} mucho más ligero de levantar que un proceso
+\item Comparte memoria, descriptores, estructuras
+\end{itemize}
+\item Aprovecha tanto el paralelismo como lo permita el hardware
+\begin{itemize}
+\item Cada hilo puede correr en un procesador distinto, si los hay
+\end{itemize}
+\item El SO debe poder manejar LWP
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgdb11fbe}]{Muchos a muchos}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.25\textwidth]{../img/hilos_muchos_a_muchos.png}
+\caption{Mapeo de hilos \emph{muchos a muchos} (imagen: \href{http://www.cs.indiana.edu/classes/b534-plal/ClassNotes/sched-synch-details4.pdf}{Beth Plale})}
+\end{figure}
+\begin{itemize}
+\item Existen \emph{hilos unidos} (\emph{bound threads}), que corresponden cada uno
+a un LWP
+\item También \emph{hilos no unidos} (\emph{unbound threads}), donde \emph{uno o más}
+corresponden a cada LWP
+\item Brindan la flexibilidad de ambos modelos
+\begin{itemize}
+\item Si el SO no maneja LWP, pueden caer en el modelo \emph{uno a muchos}
+como modo degradado
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org08ab7e6},fragile]{El \emph{ámbito de contención}}
+ \begin{center}
+¿Recibe cada uno de los hilos \emph{la misma atención} que recibiría un
+proceso? Hay dos enfoques (categorización de hilos POSIX, \texttt{pthread}):
+\end{center}
+
+\begin{itemize}
+\item \emph{Ámbito de contención de sistema} (System Contention Scope, SCS)
+\item \emph{Ámbito de contencion de proceso} (Process Contention Scope, PCS)
+\end{itemize}
+
+\begin{center}
+El \emph{ámbito de contención} se refiere a cuál será la estructura dentro
+de la cual coexisten los hilos, y dentro de la cual cada hilo
+\emph{contenderá} (competirá) por el procesador.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org640c854},fragile]{Ámbitos de contención}
+ \begin{columns}\begin{column}{0.5\textwidth}
+\begin{center}
+\texttt{PTHREAD\_SCOPE\_SYSTEM}
+\end{center}
+\begin{itemize}
+\item Todos los hilos son atendidos en el tiempo que sería asignado a \emph{un
+sólo proceso}
+\item Modelo \emph{muchos a uno}, así como los \emph{hilos no unidos} multiplexados
+en \emph{muchos a muchos}
+\end{itemize}
+\end{column}\begin{column}{0.5\textwidth}
+\begin{center}
+\texttt{PTHREAD\_SCOPE\_PROCESS}
+\end{center}
+\begin{itemize}
+\item Cada hilo es visto por el planificador como un proceso independiente
+\item Modelo \emph{uno a uno} y los \emph{hilos unidos} en \emph{muchos a muchos}
+\end{itemize}
+\end{column}\end{columns}
+\begin{center}
+\ldots{}Pero una implementación \texttt{pthreads} puede ofrecer sólo uno de los
+modelos \(\rightarrow\) Tanto Linux como Windows manejan sólo
+\texttt{PTHREAD\_SCOPE\_SYSTEM} (SCS).
+\end{center}
+\end{frame}
+\begin{frame}[label={sec:orgb52bcb2},fragile]{Otras características en \texttt{pthreads}}
+ \begin{itemize}
+\item \texttt{pthreads} incluyen varios de los otros aspectos mencionados en
+esta unidad
+\item El programador puede solicitar al núcleo la prioridad de cada uno
+de los hilos por separado (\texttt{pthread\_setschedprio})
+\item Incluso solicitar el empleo de un algoritmo de planificación en
+específico (\texttt{sched\_setscheduler})
+\item \ldots{}Pero recordemos que \texttt{pthreads} permite, en muchos casos,
+responder al proceso \emph{«Disculpa, no puedo hacer eso»}
+\end{itemize}
+\end{frame}
+
+
+\section{El despachador y el multiprocesamiento}
+\label{sec:org4eb2add}
+
+\begin{frame}[label={sec:org46b0cb0}]{Compartir el procesador}
+\begin{itemize}
+\item Estrategia empleada por Control Data (CDC6600, 1964, diseñada por
+Seymour Cray): Multitarea gestionada en hardware
+\item Un sólo procesador, pero con 10 juegos de registros
+\begin{itemize}
+\item \emph{Procesador superescalar}
+\end{itemize}
+\item A cada paso de reloj, avanzaba el \emph{juego de registros}
+\begin{itemize}
+\item \emph{Quantum} efectivo igual a la velocidad del reloj
+\item Apariencia de 10 procesadores más lentos, cada uno de
+\(\frac{1}{10}\) la velocidad del \emph{real}
+\item Multitarea sin cambios de contexto
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org70a5a8d}]{Compartir el procesador}
+\begin{itemize}
+\item ¿Desventajas?
+\begin{itemize}
+\item Nivel de concurrencia fijo
+\item Difícil de adecuar a picos de ocupación
+\item Costo muy elevado
+\end{itemize}
+\item Esquema \emph{comparable} con el \emph{HyperThreading} de procesadores actuales
+\begin{itemize}
+\item Aunque \emph{HyperThreading} busca aprovechar las diferentes fases del
+\emph{pipeline}, que no existía en 1964
+\end{itemize}
+\item Hoy en día\ldots{} Mera curiosidad histórica.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf4b2077}]{Multiprocesamiento}
+\begin{center}
+¿Qué factores relativos a la planificación tenemos que considerar
+cuando hablamos de un \emph{entorno multiprocesado}?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org7e082e7}]{Multiprocesamiento: Afinidad}
+\begin{itemize}
+\item Cuando un proceso se ejecutó por cierto tiempo, dejó porciones de
+su espacio de memoria en el caché del procesador
+\begin{itemize}
+\item Tanto segmentos de instrucciones como de datos
+\end{itemize}
+\item Cada procesador tiene \emph{usualmente} un caché independiente
+\begin{itemize}
+\item Puede haber un caché común a todo el sistema (L3); puede haber uno
+por chip multicore (L2), y puede haber uno específico para cada
+núcleo (L1)
+\end{itemize}
+\item Despachar a un proceso en un procesador distinto del que ya lo
+ejecutó es un gasto inútil
+\begin{itemize}
+\item Invalidar el caché que empleó
+\item Re-poblar el nuevo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org71564e7}]{Multiprocesamiento: Afinidad}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.6\textheight]{../img/foto_amd_barcelona.jpg}
+\caption{Fotografía de un CPU AMD Opteron \emph{Barcelona} (2007) (Imagen: \url{http://www.elnexus.com/articles/barcelona.aspx})}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orga0fc405}]{Multiprocesamiento: Afinidad}
+\begin{description}
+\item[{Afinidad suave}] Un proceso que \emph{preferentemente} será ejecutado
+en un determinado procesador
+
+Ciertos patrones de carga pueden llevar a que el
+despachador decida \emph{migrarlo} a otro procesador
+
+\item[{Afinidad dura}] Se \emph{garantiza} que un proceso será ejecutado
+siempre en un procesador (o conjunto de
+procesadores)
+\end{description}
+
+Ejemplo: En un entorno NUMA, buscamos que los procesos tengan
+\emph{afinidad dura} (y que el algoritmo de asignación de memoria
+considere dicha relación)
+\end{frame}
+
+\begin{frame}[label={sec:orga08871f}]{Multiprocesamiento: Balanceo de cargas}
+\begin{itemize}
+\item La situación ideal es que todos los procesadores despachen trabajos
+al 100\% de su capacidad
+\begin{itemize}
+\item Pero es un requisito demasiado rígido / irreal
+\item (casi) siempre habrá un procesador con tiempo libre
+\item (casi) siempre habrá procesadores con procesos encolados y en
+espera
+\item \ldots{}O ambas situaciones
+\end{itemize}
+\item Para mantener la divergencia lo menor posible, se emplea el
+\emph{balanceo de cargas}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org813d64f}]{Multiprocesamiento: Balanceo de cargas}
+\begin{itemize}
+\item El balanceo de cargas \emph{actúa en sentido contrario} de la afinidad
+al procesador
+\begin{itemize}
+\item Algoritmos que analizan el estado de las colas y transfieran
+procesos entre ellas para homogeneizarlas
+\end{itemize}
+\item Puede reubicar procesos con afinidad suave
+\begin{itemize}
+\item Debe preferir reubicar procesos \emph{sin afinidad declarada}
+\item \emph{No debe} reubicar procesos con afinidad dura
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org853ddc5}]{Estrategias de balanceo de cargas: \emph{Por empuje}}
+\begin{center}
+Balanceo de cargas por empuje (\emph{push migration})
+\end{center}
+\begin{itemize}
+\item El núcleo revisa periódicamente el estado de los procesadores
+\item Si el desbalance sobrepasa cierto umbral, \emph{empuja} a algunos
+procesos de una cola a otra.
+\item Linux ejecuta esto cada 200ms.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgca843af}]{Estrategias de balanceo de cargas: \emph{Por jalón}}
+\begin{center}
+Balanceo de cargas: Por jalón (\emph{pull migration})
+\end{center}
+\begin{itemize}
+\item Cuando un procesador queda sin tareas pendientes, ejecuta el
+proceso especial \emph{desocupado} (\emph{idle})
+\item \emph{Desocupado} no significa \emph{no hacer nada}: Puede ejecutar tareas
+del núcleo
+\item Puede \emph{averiguar} si hay procesos en espera con otro procesador,
+y \emph{jalarlos} al actual.
+\end{itemize}
+
+\begin{center}
+Los mecanismos no son mutuamente exclusivos, es común que un SO emplee
+ambos.
+
+Todo balanceo de cargas conllevará una penalización en términos de
+afinidad al CPU.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org2637275}]{Multiprocesamiento: ¿Una cola o varias?}
+\begin{center}
+En un entorno multiprocesador, ¿cómo encaramos los algoritmos antes
+descritos?
+\end{center}
+\begin{itemize}
+\item Una cola global
+\begin{itemize}
+\item Parecería una decisión más simple
+\item Se ejecuta \emph{un sólo despachador} \(\rightarrow\) Ahorro de tiempo
+\item No habría que preocuparse por balanceo de cargas — Sería natural
+\end{itemize}
+\item Una cola por procesador
+\begin{itemize}
+\item Necesaria si queremos soportar manejo de afinidad al CPU
+\item Todos los sistemas en uso amplo implementan una cola por procesador
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org755b8cf}]{Hilos hardware (\emph{hyperthreading})}
+\begin{itemize}
+\item \emph{Hilos} es una palabra que sufre abuso en nuestro campo.
+\item \emph{Hilos hardware} (\emph{hyperthreading}): No tienen relación con los
+hilos que abordamos
+\begin{itemize}
+\item Pero sí con el multiprocesamiento
+\end{itemize}
+\item La Ley de Moore no sólo ha llevado a un paralelismo \emph{expreso} (multinúcleo)
+\begin{itemize}
+\item El \emph{pipeline} de los procesadores hace que cada \emph{unidad
+funcional} del CPU pueda estar atendiendo a una instrucción
+distinta
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org67f7024}]{Hilos hardware (\emph{hyperthreading}): Pipelines}
+\begin{itemize}
+\item Un procesador simple/clásico (ejemplo: MIPS) puede dividir la
+ejecución de una instrucción en 5 etapas:
+\begin{description}
+\item[{IF}] Recuperación de la instrucción (\emph{Instruction Fetch})
+\item[{ID}] Decodificación de la instrucción (\emph{Instruction Decode})
+\item[{EX}] Ejecución (\emph{Execution})
+\item[{MEM}] Acceso a datos
+\item[{WB}] Almacenamiento (Writeback)
+\end{description}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd098cb1}]{Hilos hardware (\emph{hyperthreading}): Pipelines}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/pipeline.png}
+\caption{Descomposición de una instrucción en sus cinco pasos clásicos para organizarse en un \emph{pipeline}}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgde26cf7}]{Hilos hardware (\emph{hyperthreading}): Pipelines}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.6\textheight]{../img/foto_nvidia_denver.jpg}
+\caption{Fotografía de un \emph{core} nVidia Denver (Imagen: \url{http://www.brightsideofnews.com/news/2011/3/9/nvidia-reveals-64-bit-project-denver-cpu-silicon-die.aspx})}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org6bcfff6}]{Hilos hardware (\emph{hyperthreading}): Pipelines}
+\begin{columns}\begin{column}{0.7\textwidth}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.5\textheight]{../img/foto_pentium4.jpg}
+\caption{Fotografía de un CPU Intel Pentium 4}
+\end{figure}
+\end{column}\begin{column}{0.3\textwidth}
+Un procesador moderno presenta mucho más etapas (Pentium 4: 20 etapas)
+\end{column}\end{columns}
+\begin{center}
+\scriptsize
+(Imagen: Calvin College 2005, \url{http://www.calvin.edu/academic/rit/webBook/chapter2/design/hardware/cpu/look.htm})
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org7153c0e}]{Hilos hardware (\emph{hyperthreading}): Pipelines}
+\begin{itemize}
+\item Es común que se presenten patrones de uso que requieren servicio de
+diferentes componentes del procesador
+\begin{itemize}
+\item A veces con diferentes duraciones
+\item Lleva a la inserción de demasiadas \emph{burbujas} \(\rightarrow\) Pérdida
+de tiempo
+\end{itemize}
+\item Para remediarlo, un sólo procesador (un solo núcleo) se presenta
+como compuesto de dos o más \emph{hilos hardware}
+\begin{itemize}
+\item Conocidos en el mercado como \emph{hyper-threads}
+\item Puede aumentar el paralelismo — ¡aunque es muy improbable que sea
+en 2x!
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5fd2000}]{Hilos hardware (\emph{hyperthreading}): Pipelines}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/hyperthread.png}
+\caption{Alternando ciclos de cómputo y espera por memoria, un procesador que implementa hilos hardware (\emph{hyperthreaded}) se presenta como dos procesadores}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org0886501}]{Hilos hardware (\emph{hyperthreading}): Pipelines}
+\begin{itemize}
+\item Puede profundizarse mucho más en la planificación de hilos hardware
+\begin{itemize}
+\item Corresponde más bien al estudio de construcción de compiladores
+\item Y de arquitecturas de sistemas
+\item Consideraciones de seguridad entre hilos
+\end{itemize}
+\item Presenta gran similitud (aunque \emph{no es lo mismo}) con la
+\emph{compartición de procesador}
+\item No ahondaremos en el tema en este curso
+\begin{itemize}
+\item Se presenta para aclarar el concepto
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\section{Planificación de tiempo real}
+\label{sec:orgd53a720}
+
+\begin{frame}[label={sec:org8cdcb4b}]{¿Qué es el \emph{tiempo real}?}
+\begin{itemize}
+\item Nos hemos enfocado a repartir el tiempo disponible entre varios
+procesos
+\item No hemos tocado a los procesos que requieren \emph{garantías de tiempo}
+\begin{itemize}
+\item Para poder realizar su trabajo, tienen que recibir determinado
+tiempo de procesador \emph{antes de un tiempo límite}
+\end{itemize}
+\item Estos procesos son conocidos como \emph{de tiempo real}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0a36525}]{¿Cuándo nos enfrentamos con el tiempo real?}
+\begin{itemize}
+\item Controladores de dispositivos
+\begin{itemize}
+\item Entregan un determinado \emph{bloque} de información cada tanto tiempo
+\item Si ese bloque no es procesado completo, se sobreescribe por el siguiente
+\end{itemize}
+\item Reproductores o recodificadores de audio y video
+\begin{itemize}
+\item Si un \emph{cuadro} se pierde, el resultado puede escucharse
+\item Sea como una demora (reproducción) o como un corte (recodificación)
+\end{itemize}
+\item Procesadores de criptografía
+\begin{itemize}
+\item Si un bloque se pierde, el documento completo \emph{de ese punto en
+adelante} puede quedar corrupto
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8df7a58}]{Reserva de recursos}
+\begin{itemize}
+\item Para poder manejarse como de tiempo real, un proceso debe declarar
+de inicio cuánto tiempo requerirá
+\begin{itemize}
+\item Puede ser una sola vez: \emph{Necesito 600ms en los próximos 2s}
+\item Puede ser periódico: \emph{Cada segundo necesito 30ms}
+\end{itemize}
+\item El sistema operativo le asignará el tiempo solicitado, o le
+notificará que no puede garantizárselo
+\begin{itemize}
+\item Mensaje de error \(\rightarrow\) El proceso puede intentar continuar
+de todos modos \emph{sin prioridad especial}
+\item O puede notificar al usuario, antes de haber gastado tiempo, que
+no podrá realizar la operación exitosamente en tiempo.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3adaf05}]{Tiempo real duro y suave}
+\begin{description}
+\item[{Tiempo real duro}] El sistema puede \emph{dar garantía} de que el
+proceso tendrá el tiempo que reservó
+\item[{Tiempo real suave}] El sistema \emph{intentará} dar la prioridad
+requerida al proceso, pero puede haber pequeñas demoras
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org35c3dac}]{Restricciones del tiempo real duro}
+\begin{itemize}
+\item El planificador debe saber \emph{con certeza} cuánto tiempo toman todas
+las tareas de sistema que ejecutará en el periodo
+\item Algunos dispositivos introducen demoras con demasiada varianza
+\begin{itemize}
+\item Almacenamiento en disco
+\item Memoria virtual
+\end{itemize}
+\item Imposibilitan que un sistema que los maneje implemente tiempo real
+duro
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org64a025f}]{Tiempo real suave: Prioridad del planificador}
+\begin{itemize}
+\item Los procesos de tiempo real simplemente reciben una prioridad mucho
+más alta ante el planificador
+\item Los procesos de tiempo real \emph{pueden llevar a la inanición} de otros
+procesos
+\begin{itemize}
+\item Es esperable y aceptable — ¡No debemos correr \emph{tantos} procesos de
+tiempo real! (rompería expectativas)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge7724a7}]{Retroalimentación multinivel y tiempo real suave}
+\begin{center}
+Puede implementarse con una modificación al esquema de
+\emph{retroalimentación multinivel}
+\end{center}
+\begin{itemize}
+\item La cola de tiempo real recibe prioridad sobre todas las demás colas
+\item La prioridad de un proceso de tiempo real \emph{no se degrada} conforme
+se ejecuta repetidamente
+\begin{itemize}
+\item Aunque puede indicar que ya terminó con su trabajo sensible a
+tiempo
+\item El SO podría entonces \emph{reclasificar} al proceso con una prioridad
+normal
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2386e78}]{Retroalimentación multinivel y tiempo real suave}
+\begin{itemize}
+\item La prioridad de los demás procesos \emph{nunca llegan a subir} al nivel
+de tiempo real por un proceso automático
+\begin{itemize}
+\item Aunque sí puede hacerse por una llamada explícita
+\end{itemize}
+\item La latencia de despacho debe ser mínima
+\end{itemize}
+\begin{center}
+Casi todos los sistemas operativos hoy en día presentan facilidades
+básicas de tiempo real suave.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orga632f86}]{Inversión de prioridades}
+\begin{itemize}
+\item Un proceso \(A\) de baja prioridad hace una llamada al sistema
+\begin{itemize}
+\item Es interrumpido a la mitad de la llamada
+\end{itemize}
+\item Un proceso \(B\) de prioridad \emph{tiempo real} hace una segunda llamada
+al sistema
+\begin{itemize}
+\item Requiriendo de la misma estructura que la que tiene bloqueada \(A\)
+\end{itemize}
+\item \(B\) quedará esperando hasta que \(A\) vuelva a ser agendado
+\end{itemize}
+\begin{center}
+Esto es, \(B\) fue, para propósitos prácticos, \emph{degradado} a la
+prioridad de \(A\)
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgc96085b}]{Inversión de prioridades: Herencia de prioridades}
+\begin{itemize}
+\item Mecanismo introducido por Solaris 2
+\item Si \(A\) bloquea a \(B\) y \(P_A < P_B\)
+\item \(P_A := P_B\) hasta que \(B\) libere el recurso
+\item Pasado el bloqueo, \(P_A\) vuelve a su estado nativo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2bd82e2}]{Sistema operativo interrumpible (\emph{prevenible})}
+\begin{itemize}
+\item Hay llamadas al sistema que toman demasiado tiempo
+\item Para poder ofrecer tiempo real suave con buenas expectativas, hay
+que poder interrumpir al propio núcleo
+\item Primer enfoque: \emph{Puntos de interrupción}
+\begin{itemize}
+\item Marcar explícitamente puntos en que todas las estructuras están
+en un estado estable
+\end{itemize}
+\item No muy eficiente: Hay pocos puntos aptos para declarar puntos de
+interrupción
+\begin{itemize}
+\item Muy rígido, dificil estructurar para poner puntos adicionales
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgdc3fd5a}]{Núcleo completamente interrumpible}
+\begin{itemize}
+\item Otro enfoque: Proteger a \emph{todas} las modificaciones a estructuras
+internas del núcleo con mecanismos de sincronización
+\item Enfoque mucho más flexible
+\item Hace que el sistema operativo \emph{completo} sea más lento (aunque más
+seguro)
+\begin{itemize}
+\item Más operaciones a hacer por cada solicitud
+\end{itemize}
+\item Permiten que funciones del SO puedan correr como hilos concurrentes
+en los distintos procesadores
+\end{itemize}
+\end{frame}
+\end{document}

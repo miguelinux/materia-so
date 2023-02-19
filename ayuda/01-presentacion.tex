@@ -1,0 +1,578 @@
+% Created 2023-02-06 Mon 12:03
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Sistemas Operativos (FI-UNAM 0840): Presentación del curso}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Sistemas Operativos (FI-UNAM 0840): Presentación del curso},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Punto de partida}
+\label{sec:orgaabd153}
+
+\begin{frame}[label={sec:org4a48afe}]{Mis coordenadas}
+\begin{center}
+Personales
+\end{center}
+
+\begin{description}
+\item[{Nombre}] Gunnar Eyal Wolf Iszaevich
+\item[{E-mail}] sistop@gwolf.org \(\leftarrow\) \uline{ese} correo, no gwolf@gwolf.org
+\item[{Ubicación}] Instituto de Investigaciones Económicas UNAM
+(Secretaría Técnica)
+\item[{Teléfono}] 55-5623-0154 (IIEc-UNAM)
+\end{description}
+
+\begin{center}
+Del curso
+\end{center}
+
+\begin{description}
+\item[{Página Web}] \url{http://gwolf.sistop.org/}
+\item[{Repositorio}] \small \url{https://github.com/unamfi/sistop-2023-1/}
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org5fb3b3f}]{Horario, calendario}
+\begin{itemize}
+\item Martes y jueves
+\item 17:30 a 19:30
+\item Salón B-205
+\begin{itemize}
+\item En caso de ser necesario, videoconferencia en
+\url{https://clase.sistop.unam.mx/sistop-2023-1}
+\end{itemize}
+\item 64 horas clase en total
+\begin{itemize}
+\item \emph{Perdemos} por feriados las clases del 15 de septiembre y del 1 de
+noviembre \(\rightarrow\) \alert{60 horas} \emph{efectivas}.
+\item Voy a ausentarme (por participacióne en un congreso) las clases
+del 6 y 8 de septiembre (pero pienso cubrir esas ausencias\ldots{})
+\end{itemize}
+\item La evaluación principal será con trabajos prácticos \emph{en la medida de
+lo posible}
+\begin{itemize}
+\item Posiblemente apoyándonos en un examen parcial (detalles más adelante)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Encuadre del curso}
+\label{sec:orgea99ad2}
+
+\begin{frame}[label={sec:org1f2323e}]{El curso dentro de la currícula}
+\centering Plan 2016
+\begin{center}
+\includegraphics[width=0.5\textwidth]{../img/pres/mapa_curricular_2016.png}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org131db96}]{Seriación y materias relacionadas}
+\begin{itemize}
+\item Seriación obligatoria: \emph{Estructura y programación de computadoras}
+\item Asumo familiaridad con otras materias:
+\begin{itemize}
+\item Fundamentos de programación
+\item Estructuras de datos y algoritmos
+\item Programación orientada a objetos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf8deb96}]{Lenguajes de programación}
+\begin{itemize}
+\item Familiaridad con algún lenguaje de programación de alto nivel
+\begin{itemize}
+\item Para seguir ejemplos (que serán principalmente en shell POSIX,
+C, Ruby y Python)
+\item Para hacer ejercicios en clase y examen (basta con pseudocódigo
+semi-formal)
+\item Para tareas (¡código legal/válido!)
+\end{itemize}
+\item Familiaridad básica con C
+\begin{itemize}
+\item Más para leer que para desarrollar
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org045877a}]{Otros requisitos}
+\begin{center}
+Linux (GNU) / Unix
+\end{center}
+\begin{itemize}
+\item \alert{Muy} conveniente tener acceso a un sistema basado en Linux, o algún
+Unix
+\item \alert{Muy} preferentemente, software libre
+\item Tip: Si no lo tienes y no quieres hacer una instalación completa,
+instálalo en una \emph{máquina virtual}
+\begin{itemize}
+\item \ldots{}Ya luego lo tomarás como entorno primario ;-)
+\end{itemize}
+\end{itemize}
+
+\begin{center}
+Lectura en inglés
+\end{center}
+\begin{itemize}
+\item Buena parte del material de referencia es en inglés
+\item El material de estudios de caso casi siempre es en inglés
+\item Nivel de comprensión de lectura \alert{muy} recomendado
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org181d05a}]{¿Por qué Linux/Unix?}
+\begin{itemize}
+\item Windows, MacOS son sistemas válidos y útiles
+\item Los encontrarán con frecuencia en su vida diaria/futura
+\item Pero para aprender\ldots{}
+\end{itemize}
+\pause
+\centering \vskip 1em {\Large ¡Tarea!} \vskip 1em
+
+Leer el texto \href{http://www.joelonsoftware.com/articles/Biculturalism.html}{\emph{Biculturalism}, de Joel Spolsky} (2003) para discutir en
+clase.
+\small
+
+\url{http://www.joelonsoftware.com/articles/Biculturalism.html}
+\end{frame}
+
+\begin{frame}[label={sec:org6cf3a52}]{Programa de estudio}
+\begin{center}
+\begin{center}
+\includegraphics[width=0.8\textwidth]{../img/pres/prog_estudio_2016.png}
+\end{center}
+\end{center}
+\end{frame}
+\section{Enfoque personal}
+\label{sec:orgaac3cf5}
+\begin{frame}[label={sec:org5a4a83b}]{¿Quién soy y por qué estoy aquí?}
+\begin{itemize}
+\item Formación autodidacta
+\begin{itemize}
+\item La necesidad es el mejor motor para aprender algo
+\item ¿No conocemos algo que necesitamos? Lo aprendemos sobre la marcha
+\item ¿Aprender algo para lo que no tengo uso? Aprendizaje destinado al
+olvido/fracaso
+\end{itemize}
+\item Usuario, promotor y desarrollador de software libre
+\begin{itemize}
+\item Promotor y organizador de congresos de tinte académico y
+construcción de comunidades en México desde el 2002
+\item Desarrollador del proyecto Debian desde el 2003
+\item Profesor de asignatura en la FI desde el semestre 2013-2
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5885d4a}]{¿Por qué me parece importante la materia?}
+\begin{itemize}
+\item No espero que se dediquen a \emph{escribir} sistemas operativos (aunque
+definitivamente puede ocurrir)
+\begin{itemize}
+\item No es tan poco probable como creen\ldots{}
+\end{itemize}
+\item Pero en cualquier área de aplicación profesional \emph{requerimos conocer
+su funcionamiento} para desempeñarnos mejor
+\begin{itemize}
+\item Citando el objetivo institucional de la materia, \emph{el alumno
+obtendrá las bases para administrar un sistema operativo}, así
+como \emph{diseñar y desarrollar software operativo}
+\end{itemize}
+\item Lo que veamos en esta materia tendrá aplicación prácticamente en
+cualquier área de desempeño profesional
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb4981fd}]{¿Qué espero que logremos?}
+\begin{center}
+\scriptsize
+Adicionalmente al objetivo formal\ldots{}
+\end{center}
+\begin{itemize}
+\item El alumno conocerá el desarrollo histórico de los sistemas
+operativos, lo que le llevará a comprender la razón de ser y el
+funcionamiento general de los diversos componentes de los sistemas
+operativos actuales.
+\item Aplicando el conocimiento obtenido sobre el funcionamiento general
+de los sistemas operativos, el alumno podrá sacar mejor provecho de
+la computadora.
+\begin{itemize}
+\item Al emplearla como usuario final, al administrarla y al programar
+\end{itemize}
+\item El alumno conocerá las principales herramientas que ofrecen los
+sistemas operativos libres para el monitoreo y administración.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0e1dba5}]{¿Qué espero que logremos?}
+\begin{center}
+\emph{Desmitificar} al uso del cómputo
+\end{center}
+\begin{itemize}
+\item ¿Por qué se \emph{congela} la computadora?
+\item ¿Qué es eso de \emph{expulsar con seguridad} una unidad?
+\item ¿Por qué una computadora con más memoria \emph{parece ser} más rápida?
+\item ¿Qué pasa si reinicias y lo vuelves a intentar?
+\item \ldots{}
+\end{itemize}
+\end{frame}
+
+\section{Estructura del curso}
+\label{sec:org4a1a872}
+\begin{frame}[label={sec:orgf8e6e54}]{Unidades}
+\begin{enumerate}
+\item Introducción a los sistemas operativos
+\item Relación con el hardware: Estructuras y funciones básicas
+\item Administración de memoria
+\item Administración de procesos
+\item Planificación de procesos
+\item Sistemas de archivos
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[label={sec:orga8709a2}]{Temas transversales}
+\begin{center}
+El temario propuesto de la Facultad contempla los siguientes temas
+como unidades independientes:
+\end{center}
+\begin{enumerate}
+\item Sistemas de entrada/salida
+\item Sistemas distribuidos
+\item Seguridad y medidas de desempeño
+\end{enumerate}
+\begin{center}
+Estos temas serán abordados de forma \emph{transversal}, esto es,
+son temas que implican a los demás subsistemas y considero que no
+pueden ser estudiados de forma aislada.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgfb7f140}]{Adicionalmente\ldots{}}
+\begin{itemize}
+\item Presentaré algunos temas relevantes a la materia más cercanos a la
+actualidad en el campo
+\item Buscaremos presentar ejemplificando
+\begin{itemize}
+\item Problemáticas actuales
+\item Detalles de implementación
+\item Estado del arte
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Bibliografía}
+\label{sec:org07eaf85}
+
+\begin{frame}[label={sec:orgdfa68e9}]{Fundamentos de Sistemas Operativos}
+\begin{columns}\begin{column}{0.35\textwidth}
+\begin{center}
+\includegraphics[height=15em]{../img/pres/libro_fund_sist_op.jpg}
+\end{center}
+\end{column}\begin{column}{0.6\textwidth}
+\begin{itemize}
+\item Libro en el que participé como autor y coordinador
+\item \href{http://sistop.org}{Fundamentos de Sistemas Operativos}
+\item Con \emph{licenciamiento libre} → ¡Descárguenlo y compártanlo!
+\url{https://sistop.org/}
+\item Editado por la UNAM
+\item Disponible en la ventanilla de apuntes de la Facultad
+\item Diseñado siguiendo el plan de estudios de la FI-UNAM
+\end{itemize}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:orge772a61}]{Bibliografía oficial del curso}
+\begin{columns}\begin{column}{0.4\textwidth}
+
+\begin{center}
+\includegraphics[width=.9\linewidth]{../img/pres/libro_silberschatz.png}
+\end{center}
+\vfill
+\begin{center}
+\includegraphics[width=.9\linewidth]{../img/pres/libro_tanenbaum.png}
+\end{center}
+
+\end{column}
+\begin{column}{0.5\textwidth}
+
+{\large Operating System Concept Essentials} \\
+Abraham Silberschatz, Peter Baen Galvin, Greg Gagne\\
+Wiley (Traducción: Limusa)\\
+{\scriptsize 5ª edición (1998) en adelante }
+\vskip 2em
+{\large Sistemas operativos: Diseño e implementación} \\
+Andrew S. Tanenbaum y Albert S. Woodhull \\
+{\scriptsize Prentice Hall ed. 2ª (1997) o 3ª (2006)}
+
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:orgc4a815d}]{Otros textos recomendados}
+\Large An operating systems vade mecum \normalsize \\
+Raphael Finkel\\
+University of Kentucky - Lexington, 1988\\
+\href{ftp://ftp.cs.uky.edu/cs/manuscripts/vade.mecum.2.pdf}{Disponible en línea} desde \href{http://www.cs.uky.edu/\~raphael/}{el sitio Web del autor}
+
+\vskip 2em {\large Operating Systems: Three Easy Pieces } \\
+Remzi H. Arpaci-Dusseau y Andrea C. Arpaci-Dusseau \\
+University of Wisconsin Madison \\
+
+Disponible en línea desde \href{http://pages.cs.wisc.edu/\~remzi/OSTEP}{el sitio Web del autor} capítulo por
+capítulo, y a la venta tanto \href{http://pages.cs.wisc.edu/\~remzi/OSTEP/book-softcover.html}{impreso} como \href{http://pages.cs.wisc.edu/\~remzi/OSTEP/book-electronic.html}{en un sólo PDF}.
+\end{frame}
+
+\begin{frame}[label={sec:org76f1c45}]{Pero\ldots{} ¡Toma nota!}
+\begin{itemize}
+\item De todos modos, \emph{sugiero fuertemente que cada quién tome notas}
+\begin{itemize}
+\item Ayuda al proceso de aprendizaje
+\item Siempre entenderás mejor las cosas en tus propias palabras
+\item No está sujeto a que se \emph{caiga} mi servidor
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb2ee617}]{Sitio Web de la materia}
+\begin{center}
+\url{http://gwolf.sistop.org/}
+
+Encontrarás:
+\end{center}
+\begin{itemize}
+\item Listas de asistencia, calificaciones
+\item Temas sugeridos para las exposiciones (las abordamos en breve)
+\item Liga al material \emph{formal}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org53282de}]{Depósito en GitHub}
+\begin{itemize}
+\item Entrega de tareas, prácticas, exposiciones y proyectos
+\emph{exclusivamente} mediante el \emph{depósito Git}, en la plataforma
+\emph{GitHub}
+\item Entorno de desarrollo colaborativo
+\item Referente para el desarrollo de software (millones de proyectos activos)
+\end{itemize}
+\begin{center}
+\url{http://github.com/unamfi/sistop-2023-1}
+\end{center}
+\end{frame}
+
+\section{Normas del grupo}
+\label{sec:orga36a6b3}
+\begin{frame}[label={sec:orgb109a5a}]{Criterios de evaluación}
+\begin{center}
+\begin{tabular}{ll}
+\hline
+Proyectos y exámenes & 60\%\\
+Tareas y ejercicios & 30\%\\
+Exposiciones & 20\%\\
+\hline
+Máximo posible & 110\%\\
+\hline
+\end{tabular}
+\end{center}
+\begin{itemize}
+\item Exención de examen ordinario con calificación global de 8.5 y 100\%
+de tareas entregadas
+\begin{itemize}
+\item Si la mayor parte del semestre se desarrolla a distancia,
+posiblemente reevaluaré los requisitos
+\end{itemize}
+\item En caso de obtener más del 100\% \emph{final}, la calificación se recorta
+al máximo definido
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org98d8929}]{Acerca de la evaluación}
+\begin{center}
+Compromiso:
+
+¡Entregar tareas, trabajos y exámenes corregidos a la brevedad!
+\end{center}
+\begin{itemize}
+\item \uline{Intento} tener todo calificado al martes inmediato siguiente a su
+aplicación
+\begin{itemize}
+\item O, por lo menos, explicar claramente si no puedo entregarlos a
+tiempo (¡y apurarme!)
+\end{itemize}
+\item Tareas, proyectos y exámenes parciales son para aprender. \emph{Debo
+entregarlos explicando cualquier error}.
+\item Debo (por reglamento) conservar los exámenes finales. Les haré
+llegar copias en forma electrónica tan pronto termine de
+calificarlos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf2e75da}]{Proyectos}
+\begin{itemize}
+\item Desarrollo \emph{propio y original} que integre el contenido visto en
+determinadas unidades
+\begin{itemize}
+\item Introducción / Relación con HW
+\item Administración / planificación de procesos
+\item Sistemas de archivos
+\end{itemize}
+\item La fecha de entrega será anunciada con por lo menos una semana de
+antelación
+\item Desarrollados de forma individual o en equipos de dos integrantes
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6153796}]{Tareas \emph{obligatorias}}
+\begin{itemize}
+\item La entrega de tareas es \emph{obligatoria}
+\begin{itemize}
+\item Las tareas se consideran entregadas \emph{el día indicado, o antes si
+les resulta imposible}
+\item Tareas entregadas fuera de tiempo \alert{no tienen derecho a
+calificación} (aunque sí a contar como entregadas, y a revisión de
+conceptos)
+\end{itemize}
+\item Requisito para la exención: \alert{80\%} de tareas
+\item Requisito para presentar examen final en primera vuelta: \alert{60\%} de tareas
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgfb1dc7c}]{Prácticas}
+\begin{itemize}
+\item Auxiliares para dominar herramientas o conceptos específicos
+\item Se califican dentro del rubro de \emph{tareas}
+\item Son opcionales, se \emph{agregan} a la calificación obtenida
+\begin{itemize}
+\item Cuatro prácticas \(\Rightarrow\) una tarea con 10
+\end{itemize}
+\end{itemize}
+\pause
+\begin{center}
+\alert{¡La práctica 1 está lista para que la hagas!}
+
+Entrega: 2022.08.23
+\end{center}
+\end{frame}
+
+
+\begin{frame}[label={sec:org58a822f}]{Exposiciones / Proyectos de investigación}
+\begin{itemize}
+\item Las exposiciones deben buscar anclar la teoría que estamos
+estudiando (o temas relacionados) con la actualidad en el campo
+\item Pueden desarrollarse de forma individual o en equipo de 2 personas
+\item Expondrán sus proyectos ante el grupo o presentarán a sus alumnos
+videos exponiendo sus temas (dependiendo de la \emph{realidad})
+\begin{itemize}
+\item Exposiciones de \(\approx\) 15 minutos
+\item Sesión breve de preguntas durante la clase
+\end{itemize}
+\item En el sitio Web de la materia hay una lista de temas \emph{sugeridos}
+\begin{itemize}
+\item Pero vale más (incluso en calificación) el desarrollo de temas de
+su interés, con un enfoque original
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1ae1665}]{Autoría de lo que me entreguen}
+\begin{itemize}
+\item \alert{Todo fraude puede hasta causar baja}
+\begin{itemize}
+\item Dependiendo de la situación; aplica en tareas, proyectos, exámenes,
+ejercicios\ldots{}
+\item ¿Trabajo de investigación? ¡Evítense problemas! Nada de \emph{copiar y
+pegar}.
+\begin{itemize}
+\item Es \emph{muy fácil} detectar el copiado-y-pegado
+\item Lo hago frecuentemente.
+\end{itemize}
+\item ¿Repositorio de semestres anteriores de la materia?
+\begin{itemize}
+\item Pueden usarlo para \emph{inspiración}, para obtener ideas
+\item Es \emph{trivial} detectar código copiado\ldots{}
+\item No lo hagan. Si copian un fragmento, citen/den atribución
+correctamente.
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge1fcc9e}]{Toma de asistencia}
+\begin{itemize}
+\item \alert{Se tomará asistencia} cada sesión. La asistencia a clases \alert{es
+obligatoria}.
+\end{itemize}
+
+\begin{itemize}
+\item Sólo tendrán derecho a exención los alumnos con \alert{80\%} de asistencia
+\begin{itemize}
+\item Derecho a examen ordinario en primera vuelta los alumnos con \alert{70\%}
+de asistencia.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0319b4f}]{Normas de convivencia}
+\begin{itemize}
+\item Respeto mutuo ante todo — Incluyendo a uno mismo y al grupo
+\begin{itemize}
+\item No es lo mismo que trato \emph{formal}.
+\item Me parece perfecto que nos \emph{tuteemos} si se sienten cómodos (o no,
+si no ;-) )
+\end{itemize}
+\item Lenguaje correcto, entrar y salir sin estorbar, etc.
+\item \sout{Comida en clase: No deseable, pero permitida a condición de que no
+hagan ruido, no moleste a terceros (¡olores!) y no dejen basura.}
+\begin{itemize}
+\item Este semestre, por favor sin comida\ldots{}
+\end{itemize}
+\item Este semestre \alert{todavía tenemos que usar cubrebocas}, todo el tiempo
+que estemos en el salón.
+\item Me reservo el derecho a amonestar faltas de respeto \emph{entre
+alumnos} según amerite.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org92c9816}]{Quedo a sus órdenes}
+\begin{center}
+Repito mis coordenadas:
+\end{center}
+\begin{description}
+\item[{Nombre}] Gunnar Eyal Wolf Iszaevich
+\item[{E-mail}] sistop@gwolf.org
+\item[{Ubicación}] Instituto de Investigaciones Económicas UNAM
+(Secretaría Técnica)
+\item[{Teléfono}] \sout{5623-0154 (IIEc-UNAM)}
+\item[{Página del curso}] \url{http://gwolf.sistop.org/}
+\item[{Repositorio}] \small \url{https://github.com/unamfi/sistop-2020-2/}
+\end{description}
+\end{frame}
+\end{document}

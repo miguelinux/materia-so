@@ -1,0 +1,1529 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Sistemas de archivos: Archivos y directorios}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Sistemas de archivos: Archivos y directorios},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Semántica de archivos}
+\label{sec:org54e1d67}
+
+\begin{frame}[label={sec:orgcb2af75}]{Sistemas de archivos}
+\begin{itemize}
+\item Gestión del espacio de almacenamiento
+\item Probablemente el rol con más visibilidad de los que cubren los
+sistemas operativos
+\begin{itemize}
+\item Comprendido casi universalmente por los usuarios
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org54c666c}]{Abstracción primaria}
+\begin{itemize}
+\item El modelo primario, con el cual todos estaremos familiarizados, es
+el del \emph{directorio jerárquico}
+\item Unidad de almacenamiento visible al usuario: \emph{Archivo}
+\begin{itemize}
+\item No podemos grabar información como no sea en un archivo
+\item Se ubica por un \emph{nombre} (o por una \emph{ruta}) en el \emph{directorio}
+\end{itemize}
+\item Una de las abstracciones más longevas en la historia de la
+computación
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org298d7ea}]{Tipo de datos abstracto}
+\begin{itemize}
+\item Cuando hablamos de \emph{manejo de archivos}, necesariamente lo hacemos
+a través de un \emph{tipo de datos abstracto}
+\begin{itemize}
+\item Esto es, en el lenguaje y bajo el paradigma que sea, un tipo de
+programación \emph{orientada a objetos}
+\item Una estructura de datos (\emph{archivo}) es \emph{opaca} (no se puede
+accesar a sus contenidos más que a través de operaciones que
+trabajan \emph{en su interior})
+\item Hay una serie de \emph{operaciones definidas}
+\end{itemize}
+\item Cada sistema operativo nos presenta un \emph{conjunto de operaciones}
+que define la \emph{semántica de archivos} que maneja
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org44b40dd}]{Operaciones con archivos}
+\begin{center}
+Hay algunas diferencias entre sistemas operativos, pero en general
+tendremos las siguientes operaciones disponibles:
+\end{center}
+\begin{itemize}
+\item Crear
+\item Borrar
+\item Abrir
+\item Cerrar
+\item Leer
+\item Escribir
+\item Reposicionar (\emph{seek})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org93d668d}]{Operaciones con archivos: \emph{Crear}}
+\begin{itemize}
+\item Asigna una entrada en el \emph{directorio} para un nuevo archivo
+\item Posiblemente, también asigna espacio en el dispositivo para sus contenidos.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8358da5}]{Operaciones con archivos: \emph{Borrar}}
+\begin{itemize}
+\item Elimina al archivo del directorio
+\item Si corresponde, libera el espacio del dispositivo que el archivo emplea
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orged81fc9}]{Operaciones con archivos: \emph{Abrir}}
+\begin{itemize}
+\item Verificar si tenemos acceso para el \emph{modo de acceso} indicado
+\item Verificar si el medio soporta el \emph{modo de acceso}
+\begin{itemize}
+\item Por ejemplo, no podemos abrir para escritura un archivo en un
+disco de sólo lectura
+\item Aunque tengamos permisos
+\end{itemize}
+\item Asigna un \emph{descriptor de archivos} a la relación entre el proceso y
+el archivo en cuestión
+\item Es necesario abrir un archivo para todas las operaciones que
+realizaremos con sus datos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgeeced55}]{Operaciones con archivos: \emph{Cerrar}}
+\begin{itemize}
+\item Indica al sistema que el proceso terminó de usar al archivo
+\item El sistema vacía los buffers a disco
+\item El sistema elimina la relación archivo-proceso de las \emph{tablas} activas
+\item Se invalida al \emph{descriptor de archivo}
+\item Si un proceso cierra un archivo y quiere emplearlo \emph{de cualquier
+manera}, tiene que volverlo a abrir explíticamente.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9c5ec26}]{Operaciones con archivos: \emph{Leer}}
+\begin{itemize}
+\item Indicamos al sistema un buffer donde poner el resultado
+\item El sistema copia el siguiente \emph{pedazo} de información en el archivo
+hacia el buffer
+\begin{itemize}
+\item ¿Qué es \emph{siguiente}?
+\pause
+Lo que indique el \emph{apuntador de última posición}
+\item ¿Qué es \emph{pedazo}?
+\pause
+Un bloque de longitud fija, una línea de texto — dependiendo del
+modo en que esté abierto el archivo / solicitada la lectura
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0385b79}]{Operaciones con archivos: \emph{Escribir}}
+\begin{itemize}
+\item Indicamos un buffer al sistema
+\item El sistema copia de dicho buffer al archivo
+\item ¿A qué parte del archivo?
+\begin{description}
+\item[{Truncar}] Descartar al contenido actual del archivo (pero no su
+entrada en el directorio) y reemplazar por lo que
+indique el buffer
+\item[{Agregar}] (\emph{append}) Se guarda la información al final del
+archivo ya existente
+\item[{Escribir tras la última posición}] Se puede seguir un apuntador
+análogo al que presentamos en la lectura
+\end{description}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6e3c933}]{Operaciones con archivos: \emph{Reposicionar} (\emph{seek})}
+\begin{itemize}
+\item Lectura y escritura se hacen siguiendo a un apuntador
+\item El apuntador puede ser \emph{reposicionado} arbitrariamente dentro del
+archivo
+\begin{itemize}
+\item O, si está abierto en modo de escritura, a veces fuera del mismo
+\item No todos los sistemas lo soportan, pero puede emplearse para
+crear un archivo muy grande empleando \emph{archivos dispersos}:
+\begin{itemize}
+\item Se crea un archivo vacío
+\item Reposicionamos a cierta posición lejana (digamos, +50MB)
+\item Grabamos un sólo bloque
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc1b5b0b}]{Semántica de unidad de cinta}
+\begin{itemize}
+\item La forma en que opera este conjunto de funciones presenta una
+semántica en que cada archivo se comporta como si fuera una unidad
+de cinta
+\begin{itemize}
+\item Apuntador \rarrow Cabeza lectora
+\item Posición actual, mas rebobinado/adelantado
+\item Lectura/escritura secuencial
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6e558f9}]{Tablas de archivos abiertos}
+\begin{itemize}
+\item Cuando se abre un archivo, se crean entradas para representarlo en
+dos diferentes tablas
+\begin{description}
+\item[{Global}] Todos los archivos abiertos en el sistema
+\begin{itemize}
+\item La referencia debe seguirse manejando por un descriptor global:
+Probablemente, por \emph{i-nodo} (lo veremos a detalle
+posteriormente)
+\end{itemize}
+\item[{Por proceso}] Los archivos empleados por cada uno de los procesos
+\begin{itemize}
+\item La referencia a cada archivo se hace por \emph{descriptor de
+archivo}
+\end{itemize}
+\end{description}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org00ba690}]{Tablas de archivos abiertos}
+\begin{itemize}
+\item \emph{Semántica} (¿cuál es el comportamiento?) al haber múltiples
+procesos abriendo un archivo:
+\begin{itemize}
+\item Depende del sistema operativo
+\end{itemize}
+\item Estas tablas no deben caer en \emph{redundancia}
+\begin{itemize}
+\item Cada una tiene información distinta y específica
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org709b344}]{Tabla global de archivos abiertos (1)}
+\begin{description}
+\item[{Conteo de usuarios del archivo}] El sistema debe saber cuántos
+procesos \emph{dependen} del archivo y de qué manera. Se emplea, por
+ejemplo, para determinar si una unidad puede ser \emph{desmontada},
+para saber si un archivo puede ser abierto para escritura, etc.
+\item[{Modos de acceso}] Aunque un usuario tenga los \emph{permisos}
+necesarios para determinado acceso al archivo, el sistema puede
+negarlo si esto lleva a \emph{inconsistencias} (p.ej. dos procesos
+abriendo un mismo archivo para escritura)
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:orgcf650ce}]{Tabla global de archivos abiertos (2)}
+\begin{description}
+\item[{Ubicación en disco}] El o los bloques físicos en disco donde se
+ubica cada fragmento del archivo, evitando que cada proceso tenga
+que consultar el directorio (y estructuras relacionadas) para
+cada acceso
+\item[{Información de bloqueo}] Si el modo de acceso requiere
+sincronización explícita (manejo de \emph{bloqueo}), puede
+representarse en la tabla global.
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org632abb2}]{Tabla por proceso de archivos abiertos}
+\begin{description}
+\item[{Descriptor de archivo}] Relación entre el archivo abierto
+(típicamente especificado por \emph{nombre}) y un identificador
+numérico con que lo manejamos \emph{dentro del proceso}.
+
+Un mismo archivo tendrá diferente \emph{descriptor de archivo} en
+cada proceso.
+
+\item[{Permisos}] Modos válidos de acceso para un archivo. \emph{No es igual}
+a los permisos del archivo \emph{en disco} — Es la
+intersección de dichos permisos con el \emph{modo} en el que
+fue abierto el archivo.
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org0da5340}]{Bloqueos}
+\begin{itemize}
+\item Los archivos pueden emplearse como mecanismo de comunicación entre
+procesos
+\item Incluso a lo largo del tiempo
+\item Pero también pueden causar problemas de sincronización
+\begin{itemize}
+\item Pueden ser abiertos por procesos no relacionados
+\item Al ser manipulados de forma concurrente, pueden llevar a
+corrupción o pérdida de datos
+\end{itemize}
+\item Podemos manejar diferentes tipos de bloqueo (o \emph{candado}) sobre los
+archivos
+\begin{itemize}
+\item En algunos sistemas, incluso sobre \emph{rangos} dentro de cada uno de
+ellos
+\item Compartido vs. exclusivo
+\item Mandatorio vs. consultivo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org35bce91}]{Compartido vs. exclusivo}
+\begin{description}
+\item[{Compartido}] (\emph{shared lock})
+\begin{itemize}
+\item Típicamente empleado para asegurar la lectura concurrente
+\item Varios procesos pueden adquirir el bloqueo compartido a la vez
+\begin{itemize}
+\item Esto indica, varios procesos están \emph{leyendo} del archivo
+\end{itemize}
+\item Tienen la \emph{expectativa} de que el archivo no sufrirá modificaciones
+\end{itemize}
+\item[{Exclusivo}] (\emph{exclusive lock})
+\begin{itemize}
+\item Un sólo proceso puede adquirirlo a la vez
+\item Indica que el archivo va a ser modificado
+\end{itemize}
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:orgccf6ea0}]{Candados \emph{mandatorio} vs. \emph{consultivo}}
+\begin{center}
+Mandatorio u obligatorio (\emph{mandatory locking})
+\end{center}
+\begin{itemize}
+\item Una vez que un proceso adquiere este candado, el sistema operativo
+impone las restricciones a todos los demás procesos
+\item Independientemente de si estos conocen o no de la posibilidad de
+que este bloqueo se presente
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org265b8d0}]{Candados \emph{mandatorio} vs. \emph{consultivo}}
+\begin{center}
+Asesor o consultivo (\emph{advisory locking})
+\end{center}
+\begin{itemize}
+\item Es manejado exclusivamente entre los procesos involucrados
+\item Un proceso que no sepa del bloqueo \emph{consultivo} puede brincárselo
+\item Pero es mucho más \emph{ligero} al sistema operativo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2b6d61c}]{¿Recuerdan las \emph{primitivas de sincronización}?}
+\begin{itemize}
+\item Los archivos son \emph{recursos} gestionados por el sistema operativo,
+como los casos que vimos en la unidad de \emph{administración de
+procesos}
+\item Compartido / exclusivo: Muy parecida al \emph{patrón lectores/escritores}
+\item Mandatorio / consultivo: Podríamos manejar a los \emph{monitores} como
+mandatorios, y a los \emph{mutexes} y \emph{semáforos} como consultivos
+\item Corolario: ¡Administrando archivos y bloqueos también podemos caer
+en bloqueos mutuos!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org79d9bd9}]{Matriz incompleta, explicativa}
+\begin{itemize}
+\item De estos \(2 \times 2\) candados, esperaríamos que hubiera 4 tipos de
+candado
+\item No todos los sistemas implementan todas las posibilidades
+\item Como regla general, en Windows se maneja \emph{bloqueo obligatorio} y en
+Unix \emph{bloqueo consultivo}
+\end{itemize}
+\end{frame}
+
+\section{Tipos de archivo}
+\label{sec:org0d251cb}
+
+\begin{frame}[label={sec:org9c0eee2}]{¿Qué es el \emph{tipo} de un archivo?}
+\begin{itemize}
+\item Según el tratamiento que deba dársele para que tenga sentido, un
+archivo puede ser de distintos \emph{tipos}
+\begin{itemize}
+\item Un \emph{documento de texto} puede ser abierto por un editor, un
+\emph{ejecutable} por el \emph{módulo cargador} del sistema operativo, una
+imagen por un visor de fotografías, etc.
+\end{itemize}
+\item No debemos intentar abrir un archivo como el tipo equivocado
+\begin{itemize}
+\item Puede ir llevar al desconcierto del usuario
+\item Puede llevar a pérdidas económicas (p.ej. imprimir un archivo
+binario, o ejecutar un virus \emph{disfrazado} de algo inocuo)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org37ecb96}]{Mecanismos para identificar el tipo de un archivo}
+\begin{center}
+Los principales mecanismos para distinguir el tipo de un archivo son
+a través de:
+\end{center}
+\begin{itemize}
+\item Extensión
+\item Metadatos externos
+\item Números mágicos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3e50580},fragile]{Identificación de tipo por \emph{extensión}}
+ \begin{itemize}
+\item Empleado en los sistemas derivados de CP/M (incluye MS-DOS, VMS,
+Windows)
+\item El nombre de un archivo se divide en dos porciones: El \emph{nombre} y
+la \emph{extensión}
+\item La extensión identifica al tipo de archivo; cuando el SO lo
+identifica, lo maneja acorde
+\item El esquema original identificaba principalmente a los
+\emph{ejecutables}: \texttt{.COM}, \texttt{.EXE} (y en CP/M, \texttt{.CMD}, o en MS-DOS
+\texttt{.BAT}), y\ldots{}
+\begin{itemize}
+\item Al pasar a una interfaz gráfica, dar \emph{doble click} sobre cualquier
+archivo causa lanzar al programa que lo sepa manejar
+\item Registro de aplicaciones por tipo de archivo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8127bae},fragile]{Identificando por extensión: Seguridad}
+ \begin{itemize}
+\item Uno de los criterios de diseño de Windows es presentar una interfaz
+\emph{amable} al usuario, ocultando detalles técnicos
+\item Por ejemplo, muestra un icono en vez del tipo de archivo
+\begin{itemize}
+\item Y oculta a la extensión, que resulta \emph{redundante}
+\item \ldots{}Pero las extensiones forman ya parte del \emph{inconsciente
+colectivo}
+\end{itemize}
+\item Un virus/troyano se autoenvía por e-mail a toda la \emph{lista de
+contactos} de mi amigo, como archivo adjunto
+\begin{itemize}
+\item Emplea el nombre \texttt{inocente.png.exe}
+\item El lector de correo, \emph{amigablemente}, esconde la extensión \texttt{.exe}
+\item Yo veo a un archivo \texttt{inocente.png}, y lo abro confiado
+\item \alert{¡Bum!} Estoy infectado.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8c7c202}]{Identificación de tipo por \emph{metadatos externos}}
+\begin{itemize}
+\item El sistema empleado por la Macintosh desde 1984
+\item Separa a todos los archivos en dos \emph{divisiones} (\emph{forks}):
+\begin{description}
+\item[{División de datos}] (\emph{Data fork}) Los datos que \emph{propiamente}
+constituyen al archivo
+\item[{División de recursos}] (\emph{Resource fork}) Información \emph{acerca del
+archivo} de utilidad para el sistema
+\end{description}
+\item Incluye datos fundamentales para el entorno gráfico \emph{amigable}
+\begin{itemize}
+\item Icono
+\item Posición de la ventana al ser abierta
+\item Cadenas de traducción
+\item \emph{Creador} \rarrow El \emph{programa} que creó al archivo (y será usado
+para abrirlo si el usuario le da \emph{doble click})
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgddb7504}]{Identificación de tipo por \emph{números mágicos}}
+\begin{itemize}
+\item Mecanismo empleado por sistemas Unix
+\item El sistema mantiene una lista compilada de las \emph{huellas digitales}
+que le permiten identificar a los archivos que maneja
+\begin{itemize}
+\item El administrador local puede \emph{ampliar} la lista como lo requiera
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0156ad3},fragile]{Ejemplos de \emph{números mágicos}}
+ \begin{itemize}
+\item Los archivos tipo \emph{Formato de Intercambio Gráfico} (GIF)
+comienzan con la cadena \texttt{GIF87a} o \texttt{GIF89a} (dependiendo de la versión)
+\item Los archivos de descripción de páginas \emph{PostScript} comienzan por
+\texttt{\%!}, y los del \emph{Formato de Documentos Portátiles} (\emph{PDF}) por \texttt{\%PDF}
+\item Un documento XML inicia frecuentemente con \texttt{<!DOCTYPE}
+\item Pueden no estar \emph{anclados} al principio, sino en un punto
+específico del primer bloque
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2ccd525},fragile]{Números mágicos: El \emph{hashbang}}
+ \begin{itemize}
+\item La identificación por números mágicos incluye al mecanismo
+\emph{hashbang} (\texttt{\#!})
+\item Cuando un archivo inicia por \texttt{\#!}, el sistema sabe que debe ejecutar
+\emph{el comando indicado} en la primer línea, y \emph{alimentarlo con el
+archivo entero}
+\begin{itemize}
+\item De ese modo, al ejecutar, por ejemplo, un archivo que inicia por
+\texttt{\#!/usr/bin/perl} hace que sea ejecutado por el intérprete del
+lenguaje Perl
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Métodos de acceso}
+\label{sec:orge273081}
+
+\begin{frame}[label={sec:orgea76330}]{Estructura de los archivos}
+\begin{itemize}
+\item Prácticamente todos los archivos que manejemos responden a
+determinado \emph{formato}
+\begin{itemize}
+\item Esto es, tienen determinada estructura
+\item Los datos pueden \emph{analizarse significativamente} cuando están
+estructurados
+\end{itemize}
+\item ¿No puede el sistema operativo asistir ofreciendo formatos de
+archivo estructurados preestablecidos?
+\begin{itemize}
+\item Lo hicieron en algún momento
+\item Hoy en día, es ya muy raro
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc361b65}]{Ventajas de un archivo estructurado por el OS}
+\begin{itemize}
+\item El usuario no puede corromper un archivo
+\begin{itemize}
+\item Sea por error de programación en la aplicación, por acceso no
+sincronizado, \ldots{}
+\item El OS ofrece acceso al archivo por medio de un API
+\item Puede ofrecer garantías de atomicidad, estructura, ordenamiento,
+\ldots{}
+\end{itemize}
+\item Empleado en muchos sistemas operativos de mainframe en los 1960, 1970
+\begin{itemize}
+\item IBM CICS (1968), IBM MVS (1974), DEC VMS (1977)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4e2646a}]{¿Y por qué decayó su uso?}
+\begin{itemize}
+\item Los formatos pueden resultar demasiado rígidos
+\begin{itemize}
+\item Dificultad para representar nuevos tipos de datos
+\item \emph{No portables}: Su correcta interpretación resulta dependiente del
+OS en cuestión
+\begin{itemize}
+\item En algunos casos, de la versión
+\end{itemize}
+\end{itemize}
+\item Son tareas que pueden ya delegarse a programas dedicados (\emph{gestores
+de bases de datos})
+\begin{itemize}
+\item Ejecutando en \emph{espacio de usuario} — Requieren menos privilegios
+\item Pueden responder a solicitudes locales o por red
+\end{itemize}
+\item O \emph{subsistemas particulares}
+\begin{itemize}
+\item Como pronto veremos, los \emph{subdirectorios} en nuestros sistemas de
+archivos son simplemente archivos de tipo especial
+\item Gestionados directa y exclusivamente por el SO (e inaccesibles
+directamente al usuario)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga0f18d4},fragile]{Remanentes de los archivos estructurados}
+ \begin{center}
+En CP/M y sus derivados (incl. MS-DOS, Windows), un archivo
+puede ser abierto en modo \emph{de texto} o en modo \emph{binario}
+\end{center}
+\begin{description}
+\item[{Modo de texto}] Un cambio de línea es indicado por dos caracteres:
+\texttt{CR+LF} (ASCII 13+10)
+\begin{itemize}
+\item Se \emph{espera} que el contenido de cada línea sea ASCII \emph{imprimible}
+(caracteres 32-127)
+\begin{itemize}
+\item Actualizado: Mas \emph{extensiones nacionales} (p.ej. caracteres
+acentuados)
+\end{itemize}
+\item Dice la leyenda, para evitar demandas de patentes por interoperar con AT\&T
+\end{itemize}
+\item[{Modo binario}] \emph{«Todo vale»}
+\begin{itemize}
+\item \emph{Todo archivo} puede ser abierto en modo binario
+\end{itemize}
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org3a989fd}]{Métodos de acceso}
+\begin{itemize}
+\item El SO ya no ofrece / impone estructura a los archivos
+\item Sin embargo, sí ofrece diferentes \emph{mecanismos de acceso}
+\begin{itemize}
+\item Acordes a diferentes aplicaciones / formas de uso
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org37ce766}]{Acceso secuencial}
+\begin{center}
+Según las operaciones que permite la semántica de archivos, vimos ya
+que el método \emph{secuencial} presenta una simulación de unidad de cinta
+\end{center}
+\begin{itemize}
+\item Avanzamos consecutivamente por los bloques del archivo, de incio a
+final
+\item Podemos \emph{reposicionar} al apuntador (\emph{cabeza lectora})
+\end{itemize}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/acceso_secuencial.png}
+\caption{Archivo de acceso secuencial}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org88d6a0e}]{Usos para el acceso secuencial}
+\begin{itemize}
+\item El acceso secuencial es la forma \emph{más natural} de manipular archivos
+\begin{itemize}
+\item \emph{Más natural} en el sentido de que es la semántica ofrecida directamente
+\end{itemize}
+\item Usos esperables:
+\begin{itemize}
+\item Lectura/ejecución de binarios, bibliotecas
+\item Documentos (p.ej. texto)
+\item Estructuras anidadas (p.ej. XML, JSON, YAML)
+\end{itemize}
+\item Es terriblemente ineficiente para datos \emph{estructurados}
+\begin{itemize}
+\item No conocemos de antemano el punto de inicio o finalización de
+cada registro
+\item En bases de datos: Un \emph{barrido secuencial} lleva al peor de los
+rendimientos posibles
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9145357}]{Acceso aleatorio}
+\begin{itemize}
+\item Puede programarse directo en la aplicación, o emplear \emph{gestores}
+\begin{itemize}
+\item Ya sea en biblioteca embebida (SQLite) o como un proceso
+independiente
+\end{itemize}
+\item La semántica que nos ofrece el sistema operativo permite \emph{brincar}
+a puntos arbitrarios del archivo
+\begin{itemize}
+\item Y, a diferencia de una unidad de cinta \emph{real}, no incurrimos en
+demora
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgddd2790},fragile]{Acceso aleatorio: Ejemplo}
+ \begin{itemize}
+\item El \emph{descriptor de archivo} \texttt{FD} apunta a un archivo con 2000
+registros de 75 bytes cada uno
+\item Tenemos la variable \texttt{registro}, un buffer de 75 bytes
+\item Queremos el registro 65
+\item \emph{Reposicionamos} el apuntador a \(65 \times 75\):
+
+\texttt{seek(FD, 4875)}
+\item Leemos los siguientes 75 bytes a nuestra variable:
+
+\texttt{read(FD, *registro, 75)}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgfac182f}]{Archivo de acceso aleatorio}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/acceso_aleatorio.png}
+\caption{Archivo de acceso aleatorio}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgf630c05}]{Acceso \emph{relativo a índice}}
+\begin{itemize}
+\item A últimos años se han popularizado los \emph{gestores de base de datos no
+estructurados}, \emph{orientados a texto} u \emph{orientados a documentos}
+\begin{itemize}
+\item Han adoptado el nombre genérico \emph{NoSQL}
+\end{itemize}
+\item Pueden guardar registros de \emph{tamaño variable} y sin una estructura
+interna predefinida
+\begin{itemize}
+\item Cada registro puede tener conjuntos de datos distintos
+\end{itemize}
+\item En general, operan con un archivo \emph{corto}, que mantiene únicamente
+una tabla pequeña
+\begin{itemize}
+\item Identificador de registro
+\item Dirección de inicio
+\item Dirección de fin
+\end{itemize}
+\item Y un archivo \emph{largo}, que contiene los datos propiamente
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc5b693c}]{Acceso \emph{relativo a índice}}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/acceso_relativo_a_indice.png}
+\caption{Acceso relativo a índice: Un índice apuntando al punto justo de un archivo sin estructura}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org06dcf2b}]{Acerca del acceso \emph{relativo a índice}}
+\begin{itemize}
+\item El índice entero puede típicamente mantenerse en memoria, el tiempo
+de acceso es muy bajo (igual al de \emph{acceso directo})
+\begin{itemize}
+\item Pero con mayor flexibilidad en el \emph{esquema de datos}
+\end{itemize}
+\item Optimizado para operaciones \emph{mayormente de lectura} (o de
+agregación al final)
+\begin{itemize}
+\item Las modificaciones y remociones crean \emph{hoyos} (fragmentación)
+\end{itemize}
+\item Es necesario \emph{asegurar la sincronía} entre ambos archivos
+\begin{itemize}
+\item Si se pierde la sincronía, se corrompe la información
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgfa3d743},fragile]{Acceso \emph{mapeado a memoria}}
+ \begin{itemize}
+\item Caso especial del acceso aleatorio
+\item El programa de usuario \emph{no usa} la interfaz \emph{tradicional} de cinta,
+sino que pide la inclusión de determinado archivo \emph{dentro de su
+espacio de memoria}
+\end{itemize}
+\begin{verbatim}
+from os import path
+from mmap import mmap
+filename = 'un_archivo' #...
+if not path.isfile(filename):
+  raise IOError, 'El archivo %s no existe!' % filename
+fh = open(filename, 'r+')
+datos = mmap(fh.fileno(), 0)
+datos[50:74] = 'Escribiendo directamente'
+print datos[0:100]
+\end{verbatim}
+\begin{center}
+Más detalles: \href{https://manpages.debian.org/jessie/manpages-dev/mmap.2.en.html}{man 2 mmap}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgaa71446}]{Transferencias \emph{orientadas a bloques}}
+\begin{itemize}
+\item En los tres modos de acceso, las solicitudes parecen ser del \emph{rango
+de bytes} solicitados, sean cuantos sean
+\item En realidad, es una abstracción que nos da el sistema operativo —
+Las transferencias son siempre hechas en \emph{bloques} de tamaño
+definido por el hardware
+\begin{itemize}
+\item Históricamente (y por más de 50 años), 512 bytes
+\item Hoy en día (2009--), 4K (\emph{Formato Avanzado})
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5078160}]{Las transferencias en bloques y el rendimiento}
+\begin{itemize}
+\item Lecturas de registros contiguos en el mismo bloque \rarrow Servidas
+de caché
+\item Lectura aleatoria, o escritura: Deben transferirse bloques enteros
+\item Escritura a un punto no en \emph{caché}:
+\begin{itemize}
+\item Una lectura (para obtener el \emph{contexto}, el resto del bloque)
+\item Una escritura (del bloque entero modificado)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge2bae25}]{Las transferencias en bloques y el rendimiento}
+\begin{itemize}
+\item Conviene diseñar estructuras de datos \emph{alineadas al tamaño del bloque}
+\begin{itemize}
+\item Un registro de 400 bytes en un dispositivo con bloques de 512
+bytes \emph{casi siempre} (>75\%) requerirá la transferencia de dos
+bloques
+\item Incluso un registro pequeño (p.ej. 7 bytes) puede caer en la
+frontera entre bloques (aunque sea sólo 1.3\% de las veces)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Organización de archivos}
+\label{sec:orga27c3d6}
+
+\begin{frame}[label={sec:orgf59dcbb}]{Pero hablamos de \emph{muchos} archivos\ldots{}}
+\begin{itemize}
+\item Hasta ahora hemos visto cómo se trabaja dentro de \emph{un} archivo
+\item Sin embargo, esta unidad se refiere a \emph{sistemas} de archivos
+\item Tenemos que considerar cómo se organizan \emph{numerosos archivos}
+dentro de \emph{un mismo medio}
+\end{itemize}
+\pause
+\begin{itemize}
+\item Hoy en día, eso significa hablar de \emph{directorios}
+\begin{itemize}
+\item Aunque existen otras formas de organización
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc199b95},fragile]{Conveniciones de nomenclatura}
+ \begin{itemize}
+\item En diferentes sistemas cambia la cantidad y conjunto de caracteres
+válidos para un nombre de archivo
+\item Cambia también el \emph{caracter separador} — Indica el fin de un
+elemento de directorio e inicio de otro
+\begin{description}
+\item[{Unix}] diagonal (\texttt{/}) (incl. MacOS X, Android)
+\item[{Windows}] Diagonal invertida (\(\backslash\))
+\item[{MacOS histórico (\(\le 9.x\))}] Dos puntos (\texttt{:})
+\end{description}
+\item Las interfaces usuario muchas veces los \emph{ocultan} al usuario
+\begin{itemize}
+\item Aunque el programador \emph{siempre} debe estar consciente de ellos
+\item APIs \emph{inteligentes} \rarrow Diseñados pensando un sistema,
+convierten a la nomenclatura de otro cuando son compilados para
+éste
+\begin{itemize}
+\item Pueden ser de gran ayuda, o pueden ser la perdición
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1869aa1}]{Sistema de archivos plano}
+\begin{itemize}
+\item Primer acercamiento: Permitir que varios archivos existan en el
+mismo disco, \emph{en el mismo espacio organizacional}
+\item Sin \emph{jerarquía de directorios}
+\item Requisito de unicidad global de \emph{nombres}
+\item Uso de discos (en mainframes): A corto / mediano plazo (no para
+almacenamiento \emph{permanente})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org26f66ce}]{Primeros sistemas en computadoras personales}
+\begin{itemize}
+\item Computadoras personales: Sistemas de archivos basados en \emph{discos
+flexibles}
+\begin{itemize}
+\item En un principio, entre 80 y 160KB
+\end{itemize}
+\item Si un usuario requería mantener una división temática, podía separar
+su trabajo en \emph{discos flexibles} distintos
+\item IBM PC: El concepto de directorios aparece con la IBM XT (1983)
+\begin{itemize}
+\item Al llegar el soporte para discos duros (10MB)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org920bbad}]{Distintas abstracciones}
+\begin{itemize}
+\item El sistema MFS, en la primer versión de la Apple Macintosh,
+presentaba la \emph{ilusión} de directorios
+\begin{itemize}
+\item Comparables a \emph{etiquetas} (pero únicamente uno por archivo)
+\item Mantenía el requisito de unicidad de nombre de archivo por disco
+\item Algunos componentes del sistema \emph{modelaban} los directorios,
+otros (p.ej. los diálogos) no
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org09afd53}]{Sistemas de archivos planos hoy}
+\begin{itemize}
+\item No han desaparecido, ni son sólo para bajos volúmenes de información
+\item Por ejemplo, el sistema de \emph{almacenamiento en la nube} Amazon S3
+(Simple Storage Service)
+\begin{itemize}
+\item Maneja únicamente \emph{objetos} y \emph{cubetas} (similar a \emph{archivos} y
+\emph{unidades})
+\item Permite referirse a un objeto o conjunto de objetos empleando
+\emph{filtros} sobre una cubeta
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orged40ba2}]{Directorios de \emph{profundidad fija}}
+\begin{itemize}
+\item Primeras implementaciones: Separación funcional únicamente
+\item Un sólo nivel
+\item Nombres de (lo que ahora conocemos como) directorios:
+\begin{description}
+\item[{MFD}] \emph{Master File Directory}  (directorio raiz)
+\item[{UFD}] \emph{User File Directory} (directorios de usuarios del sistema)
+\end{description}
+\item Resuelve el problema del \emph{nombre global único}
+\item Permite almacenar \emph{mejor} los proyectos a largo plazo
+\begin{itemize}
+\item Pero sigue siendo relativamente limitado (¿ante las costumbres actuales?)
+\end{itemize}
+\item Dificulta la colaboración entre usuarios
+\begin{itemize}
+\item ¿Cómo pueden dos usuarios trabajar en un mismo proyecto?
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga78b63d}]{Directorios de \emph{profundidad fija}}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/dot/directorio_simple.png}
+\caption{Directorio simple, limitado a un sólo nivel de profundidad}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org73abaf7}]{Directorios estructurados en \emph{árbol}}
+\begin{itemize}
+\item Podemos verlo como paso natural obvio
+\item Puede permitir múltiples niveles jerárquicos, o incluso una
+\emph{jerarquía ilimitada}
+\begin{itemize}
+\item Algunos OSs limitan a cierto número (alto) de niveles
+\emph{preventivamente}, presentando una \emph{ilusión} de ser ilimitados
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org03d069e}]{Directorios estructurados en \emph{árbol}}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/dot/directorio_arbol.png}
+\caption{Directorio estucturado en árbol}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orge5266ed},fragile]{Consecuencias del directorio como un árbol}
+ \begin{itemize}
+\item Cada usuario, y el sistema entero, estructura su información
+siguiendo \emph{criterios lógicos propios}
+\begin{itemize}
+\item Almacenamiento definitivamente visto para el largo plazo
+\end{itemize}
+\item Nacen las \emph{rutas de búsqueda}
+\begin{itemize}
+\item Programas y bibliotecas del sistema pueden estar en diferentes lugares
+\item El usuario puede tener programas propios
+\item El sistema emplea una \emph{ruta de búsqueda} para encontrarlos \emph{por su
+nombre}
+\item Ejemplo Unix: \texttt{/usr/local/bin:/usr/bin:/bin:\textasciitilde{}/bin}
+\item Ejemplo Windows: \texttt{c:\textbackslash{}WINDOWS\textbackslash{}system32;c:\textbackslash{}WINDOWS;}
+\texttt{c:\textbackslash{}WINDOWS\textbackslash{}System32\textbackslash{}Wbem}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org905ac73}]{El directorio como un \emph{grafo dirigido}}
+\begin{itemize}
+\item Muchas veces vemos al directorio como un árbol
+\item En muchos de nuestros sistemas, estrictamente hablando, es un
+\emph{grafo dirigido}
+\begin{itemize}
+\item \emph{Superconjunto} de un árbol
+\item Un mismo nodo puede tener varios \emph{directorios padre}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9f7a9d9}]{El directorio como un \emph{grafo dirigido}}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.45\textwidth]{../img/dot/directorio_DAG.png}
+\caption{Directorio como un \emph{grafo dirigido acíclico}: El directorio \texttt{proyecto} está tanto en el directorio \texttt{/home/usr1} como en el directorio \texttt{/home/usr2}}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org792e589}]{El directorio como un \emph{grafo dirigido}: detallando\ldots{}}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.45\textwidth]{../img/dot/directorio_DAG_completo.png}
+\caption{Directorio como un \emph{grafo dirigido} (ya no \emph{acíclico}), mostrando en gris los \emph{enlaces ocultos} \texttt{.} y \texttt{..}}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org7307e9a},fragile]{Detalles extra en los grafos dirigidos}
+ \begin{itemize}
+\item En la gráfica anterior, aparecen dos entradas \emph{curiosas} en cada
+directorio: \texttt{.} y \texttt{..}
+\item Encontramos esta semántica tanto en sistemas tipo Unix como tipo
+Windows
+\item Son directorios, pero no apuntan a una estructura nueva
+\begin{itemize}
+\item Apuntan a directorios \emph{ya existentes}
+\item \texttt{.} apunta \emph{al mismo directorio que lo contiene}
+\item \texttt{..} apunta al \emph{directorio padre} de donde está contenido
+\end{itemize}
+\item ¿Y qué pasa con \texttt{proyecto}?
+\begin{itemize}
+\item \texttt{..} sólo puede apuntar a \emph{un} lugar (es una sola entrada)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org142c1fe}]{Ligas duras y ligas simbólicas}
+\begin{itemize}
+\item Un archivo puede estar en \emph{más de un lugar} en el directorio
+\begin{itemize}
+\item Pero un directorio es una entidad un tanto particular
+\end{itemize}
+\item Esto se expresa empleando las \emph{ligas duras} y \emph{ligas simbólicas}
+\begin{itemize}
+\item En Windows: Los \emph{accesos directos} son el \emph{pariente pobre} de las
+ligas simbólicas
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgab87def}]{Las ligas duras}
+\begin{itemize}
+\item Una entrada en el directorio es meramente la relación entre una
+\emph{ruta y nombre} de archivo y un \emph{i-nodo}
+\begin{itemize}
+\item Por ahora, basta decir que un \emph{i-nodo} es un número único, que
+\emph{apunta} a los \emph{datos} de cada archivo
+\end{itemize}
+\item Llamamos \emph{liga dura} a que haya más de una entrada en el directorio
+apuntando al mismo archivo
+\begin{itemize}
+\item No hay \emph{indirección}, no se refieren unos a otros — Es el mismo
+objeto, el mismo archivo
+\item Si borramos uno, el otro sigue funcionando
+\item Si modificamos uno, el otro también se modifica
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga58f511},fragile]{Ligas duras: Restricciones}
+ \begin{center}
+Las ligas duras presentan dos restricciones principales:
+\end{center}
+\begin{enumerate}
+\item No pueden hacerse ligas duras \emph{fuera del sistema de archivos} (del
+disco o partición actual)
+\begin{itemize}
+\item De otro modo, no podría ser el mismo objeto
+\end{itemize}
+\item No pueden hacerse ligas duras a directorios
+\begin{itemize}
+\item Formalmente puede haberlas (de hecho, \texttt{.} y \texttt{..} lo son)
+\item Sólo el administrador puede crearlas
+\item Pueden causar problemas (veremos en un momento: \emph{Recorrer los
+directorios})
+\end{itemize}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[label={sec:orga2a0d0a}]{Ligas simbólicas (sistemas Unix)}
+\begin{itemize}
+\item Otro mecanismo para que un objeto \emph{aparezca} en más de un punto del directorio
+\item Es un archivo \emph{especial} que incluye el nombre de otro objeto
+(¿archivo?) destino
+\begin{itemize}
+\item Cuando es abierto, \emph{el SO} sigue la indirección
+\end{itemize}
+\item Son más flexibles, pero menos robustas, que las ligas duras
+\begin{itemize}
+\item \emph{Pueden} hacerse ligas simbólicas a objetos en otros sistemas de
+archivos y a directorios
+\item Pero el archivo \emph{referido} es el único \emph{real}
+\begin{itemize}
+\item Si el archivo referido se elimina o renombra, las ligas
+simbólicas \emph{se rompen}
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc38229b},fragile]{El \emph{pariente pobre}: Accesos directos}
+ \begin{itemize}
+\item Las \emph{ligas duras} existen tanto en Unix como en Windows
+\begin{itemize}
+\item Aunque en Windows \emph{casi} nunca son empleadas
+\end{itemize}
+\item Las ligas simbólicas sólo existen en Unix
+\item Son una herramienta muy útil y poderosa — En Windows 95 se introdujo
+el \emph{acceso directo} buscando implementar parte de su funcionalidad
+\begin{itemize}
+\item Son archivos \emph{estándar}
+\item Extensión \texttt{.lnk}
+\item Pensados principalmente para el escritorio y el menú de inicio
+\end{itemize}
+\item ¿Principal diferencia? No se \emph{siguen} automáticamente
+\begin{itemize}
+\item Tiene que hacerlo la aplicación — Y pocas lo hacen
+\item Un \emph{acceso directo} puede abrirse como un archivo; leer una \emph{liga
+simbólica} lee directamente del archivo referido
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org387dbd3},fragile]{Volviendo a nuestro grafo dirigido}
+ \begin{itemize}
+\item No podemos ya decir \emph{formalmente} que sea un grafo dirigido
+\emph{acíclico}
+\begin{itemize}
+\item \texttt{.} y \texttt{..} crean ciclos
+\item Aunque con esa excepción hecha, podría ser visto como uno
+\end{itemize}
+\item \texttt{proyecto} está en realidad \emph{sólo} en \texttt{/home/usr2}
+\begin{itemize}
+\item \texttt{/home/usr1/proyecto} es una liga simbólica hacia él
+\begin{itemize}
+\item Pero es transparente a las aplicaciones
+\end{itemize}
+\item \emph{Podría} haber ligas duras, con un archivo en varios directorios,
+o incluso con distintos nombres en el mismo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org08a02f7},fragile]{Operaciones con directorios}
+ \begin{itemize}
+\item Para trabajar con los directorios, tenemos una semántica básica
+similar a la que manejamos para los archivos
+\begin{itemize}
+\item Varias de las operaciones son análogas cercanas
+\end{itemize}
+\item Operaciones básicas: (C)
+\begin{itemize}
+\item Abrir (\texttt{dirstream = opendir(dirname)}) y cerrar
+(\texttt{closedir(dirstream)})
+\begin{itemize}
+\item El \emph{flujo de directorio} (\emph{directory stream}) es equivalente al
+\emph{descriptor de archivo}
+\item Podemos \emph{rebobinar} con \texttt{rewinddir(dirstream)}
+\end{itemize}
+\item Listado de objetos en el directorio: Iterar sobre sus objetos
+(\texttt{dirent = readdir(dirstream)})
+\item Buscar un objeto en particular: Filtrar sobre del listado
+\item Crear, eliminar o renombrar un objeto: Si bien son \emph{escrituras al
+directorio}, se implementan a través de funciones de manejo de
+archivos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org583452a},fragile]{Ejemplo de operaciones con directorios}
+ \begin{verbatim}
+#include <stdio.h>
+#include <dirent.h>
+#include <sys/types.h>
+
+int main(int argc, char *argv[]) {
+  struct dirent *archivo;
+  DIR *dir;
+  if (argc != 2) {
+    printf("Indique el directorio a mostrar\n");
+    return 1;
+  }
+  dir = opendir(argv[1]);
+  while ((archivo = readdir(dir)) != 0) {
+    printf("%s\t", archivo->d_name);
+  }
+  printf("\n");
+  closedir(dir);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org1c4df78}]{Recorriendo los directorios (\emph{directory traversal}) (1)}
+\begin{itemize}
+\item Una operación muy frecuente es el \emph{recorrido} (\emph{traversal}) de
+directorios
+\begin{itemize}
+\item Para agrupar una estructura completa en un archivo comprimido
+\item Para copiar el contenido completo de un directorio a otro medio
+\item \ldots{}
+\end{itemize}
+\item Sistema de archivos plano: Trivial
+\begin{itemize}
+\item El programa recién visto ilustra cómo
+\end{itemize}
+\end{itemize}
+\pause
+\begin{itemize}
+\item Sistemas de profundidad fija o árbol: Sencillo
+\begin{itemize}
+\item Verificación de tipo de archivo, separación en una función,
+recursión
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8200dc9}]{Recorriendo los directorios (\emph{directory traversal}) (2)}
+\begin{itemize}
+\item Sistemas de grafos dirigidos: \ldots{}Se complica
+\end{itemize}
+\pause
+\begin{itemize}
+\item Requerimos mantener una tabla de \emph{archivos visitados} en memoria
+\begin{itemize}
+\item Para evitar caer en un ciclo sin fin
+\item La tabla debe registrarse \emph{por i-nodo}, no por nombre de archivo
+\rarrow Los nombres de archivo no serán iguales
+\end{itemize}
+\item Pueden ser decenas o cientos de miles de archivos en un uso típico
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org39049a7}]{\emph{Montaje} de sistemas de archivos}
+\begin{itemize}
+\item Un sistema puede trabajar con \emph{un sólo} sistema de archivos
+\item Pero muchas veces trabaja con varios
+\begin{itemize}
+\item Distintos medios físicos \rarrow sistemas de archivos
+independientes
+\item Diferentes objetivos \rarrow sistemas de archivos especializados
+para cada uno
+\item Abstracciones de sistemas de archivos no físicos
+\item Razones administrativas (p.ej. confinar espacio máximo ocupado)
+\end{itemize}
+\item ¿Cómo presenta el sistema operativo a los diferentes sistemas de
+archivos presentes?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd12057a}]{Unix: Un \emph{árbol} con \emph{puntos de montaje}}
+\begin{itemize}
+\item El sistema \emph{completo} está estructurado en torno a \emph{un sólo árbol}
+\item Cada sistema de archivos se \emph{monta} en el lugar que el administrador
+determina
+\begin{itemize}
+\item El \emph{punto de montaje} es un directorio en el sistema de archivos
+superior
+\item Si ese directorio no está vacío, su contenido \emph{queda oculto}
+mientras el nuevo sistema de archivos esté montado
+\begin{itemize}
+\item Salvo implementaciones como UnionFS
+\end{itemize}
+\end{itemize}
+\item Algunos entornos usuario \emph{abstraen} esta representación, y presentan
+las unidades \emph{como si fueran una nueva raiz}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org52537e5}]{Un árbol con distintos sistemas de archivo \emph{montados}}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/dot/puntos_de_montaje.png}
+\caption{Árbol formado del montaje de \texttt{sda1} en la raiz, \texttt{sda2} como \texttt{/usr}, \texttt{sdb1} como \texttt{/home}, y el directorio virtual \texttt{proc}}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org2fab239},fragile]{Windows: sistema de archivos virtual de dos niveles}
+ \begin{itemize}
+\item La estrategia empleada por Windows es muy distinta
+\item Cada uno de los sistemas de archivo \emph{detectados} recibe un
+\emph{identificador de volumen} y es montado automáticamente
+\item Los usuarios pueden ver a todos los volúmenes montados
+\begin{itemize}
+\item Nomenclatura \texttt{VOL:\textbackslash{}Dir 1\textbackslash{}Dir 2\textbackslash{}Archivo.ext}
+\end{itemize}
+\item Dentro de cada uno de los volúmenes encuentran directorios
+estructurados como árbol
+\item Algunos volúmenes están preasignados por herencia
+\begin{itemize}
+\item \texttt{A} y \texttt{B} para unidades de disco flexible
+\item \texttt{C} para el disco de inicio del sistema
+\item Siguientes particiones, medios removibles o conexiones sobre red:
+\texttt{D}, \texttt{E}, \texttt{F}, etc.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga019806}]{Visión del árbol en un sistema Windows}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/dot/montaje_windows.png}
+\caption{Vista de un sistema de archivos Windows}
+\end{figure}
+\end{frame}
+\section{Sistemas de archivos remotos}
+\label{sec:orgbb38cf8}
+\begin{frame}[label={sec:orgef65bac}]{La red y los sistemas de archivos}
+\begin{itemize}
+\item \emph{Modelo cliente-servidor}
+\begin{itemize}
+\item Un equipo que tiene algún recurso que puede ofrecer a otros es un
+\emph{servidor}
+\item Todo equipo que use sus recursos es \emph{cliente}
+\item Dos computadoras pueden ser \emph{clientes} y \emph{servidores} mutuos al
+mismo tiempo
+\end{itemize}
+\item Uno de los primeros usos de las redes fue compartir archivos
+\begin{itemize}
+\item De forma \emph{explícita}: Transferencia manual con programas
+especializados (p.ej. FTP)
+\item De forma \emph{implícita} y \emph{automática}: Sistema de archivos sobre la
+red
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org48ab652},fragile]{Llamadas a procedimientos remotos (\emph{RPC})}
+ \begin{itemize}
+\item Mecanismo de mensajes (y manejo básico de sesión) que causen que una
+computadora remota ejecute determinada acción
+\item Pero al mismo tiempo, es un \emph{protocolo específico} de
+\emph{descubrimiento de recursos} y \emph{abstracción} desarrollado en los
+1980s por Sun Microsystems
+\begin{itemize}
+\item Hay muchos protocolos comparables \rarrow \texttt{DCE/RPC} (OSF), \texttt{DCOM}
+(Microsoft)
+\item Hoy en día, \texttt{SOAP} y \texttt{XML-RPC}
+\begin{itemize}
+\item Con mayor independencia de proveedor, pero con mayor complejidad
+\end{itemize}
+\end{itemize}
+\item Permite al programador delegar en un \emph{servicio} el manejo de las
+conexiones en red
+\begin{itemize}
+\item Y limitarse a atender la conexión \emph{ya establecida}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb2bf545},fragile]{Network File System (NFS)}
+ \begin{itemize}
+\item \emph{Network File System} NFS (Unix), construido sobre Sun-RPC (1984)
+\item Diseñado para aprovechar el hardware existente
+\begin{itemize}
+\item Un sólo servidor de archivos
+\item Todas las estaciones de trabajo \emph{montan} los directorios \texttt{/home}
+\item Incluso pueden montar otras partes del sistema
+\item Estaciones \emph{diskless}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8d937a8},fragile]{Semántica básica de NFS}
+ \begin{itemize}
+\item Implementa la semántica de un sistema local Unix sobre la red
+\begin{itemize}
+\item Se integra transparentemente en cualquier sistema Unix
+\end{itemize}
+\item Los sistemas remotos se montan con el mismo comando y lógica que
+los locales
+\begin{itemize}
+\item \texttt{\# mount archivos.unam.mx:/home /home}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7a756be}]{Ventajas de NFS}
+\begin{itemize}
+\item Implementación muy sencilla
+\item Integración semántica directa (para sistemas tipo Unix)
+\item Protocolo muy ligero
+\begin{itemize}
+\item Al no hacer verificaciones por operación ni implementar cifrado,
+es muy conveniente para manejar archivos muy grandes
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org374acc3}]{Desventajas de NFS}
+\begin{itemize}
+\item \emph{Escrituras síncronas} \rarrow Seguras, pero lentas
+\begin{itemize}
+\item Implementaciones posteriores incluyen manejo de caché de escritura
+\end{itemize}
+\item Manejo de seguridad / credenciales trivial / ingenuo
+\begin{itemize}
+\item Acceso controlado por dirección IP
+\item Requiere correspondencia de nombre-UID de usuarios
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org018f3ad}]{Server Message Block (SMB)}
+\begin{itemize}
+\item \emph{Familia} de protocolos de compartición de archivos empleado en
+sistemas Microsoft (desde \textasciitilde{}1990)
+\item Primeras implementaciones, sobre un protocolo de red propio (NBF,
+frecuentemente conocido como NetBEUI); migrado gradualmente para
+operar sobre TCP/IP
+\begin{itemize}
+\item 100\% sobre TCP/IP desde el 2000
+\item También conocido como CIFS (\emph{Common Internet File System})
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc314791},fragile]{Server Message Block (SMB)}
+ \begin{itemize}
+\item Se ajusta más cercanamente a la semántica de MS-DOS/Windows
+\begin{itemize}
+\item \emph{Tiende} a emplearse montando el directorio compartido como una
+unidad en \emph{Mi PC}:
+
+\texttt{> NET USE W: \textbackslash{}\textbackslash{}servidor\textbackslash{}directorio}
+\item En Windows, puede referirse a un archivo directamente por su ruta
+(aunque varios programas no lo implementan)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf48928a}]{Ventajas de SMB}
+\begin{itemize}
+\item Hoy en día, implementaciones bastante universales, para cualquier
+sistema operativo
+\begin{itemize}
+\item \emph{Samba} \rarrow Implementación hecha (originalmente) por
+\emph{ingeniería inversa}
+\end{itemize}
+\item Fácil de integrar en entornos basados en Windows
+\item Si bien las versiones viejas presentan problemas de seguridad, las
+implementaciones actuales son bastante confiables
+\begin{itemize}
+\item Particularmente en relación al cifrado de credenciales
+\end{itemize}
+\item Mecanismo de \emph{bloqueo oportunista} (explicamos pronto)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgeef95c9}]{Desventajas de SMB}
+\begin{itemize}
+\item Protocolo pensado para una red \emph{pequeña}
+\begin{itemize}
+\item Demasiado \emph{platicador}, puede llevar a congestiones de red
+\end{itemize}
+\item Resolución de direcciones poco confiable
+\begin{itemize}
+\item Originalmente basada 100\% en \emph{broadcast}
+\item Posteriormente, empleando un servidor \emph{WINS}
+\item Actualmente, sobre DNS dinámico
+\end{itemize}
+\item Semántica de autenticación poco clara
+\begin{itemize}
+\item Esquemas de autenticación \emph{por recurso}, \emph{por usuario}, basados
+en directorio
+\item Imposibilidad de establecer sesiones múltiples
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1833b52},fragile]{Bloqueo oportunista (\emph{OpLock})}
+ \begin{itemize}
+\item Bloqueo orientado al \emph{renidmiento}, no a la sincronización
+\item Busca mejorar el manejo del caché e ignorar (un poco) la semántica
+de abrir/cerrar archivos
+\begin{description}
+\item[{Para lotes}] Si un archivo es abierto y cerrado muchas veces
+(comportamiento común con los archivos \texttt{.BAT} de
+MS-DOS), este bloqueo \emph{demora} al \texttt{close()},
+esperando que pronto haya un \texttt{open()} al mismo.
+\item[{Exclusivos}] Una vez otorgado, el cliente asume que es el único
+manipulando al archivo, y mantener en caché local
+todos los cambios; el servidor puede \emph{romper} o
+\emph{revocar} este bloqueo, obligando a una
+sincronización.
+\end{description}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgdaf8050}]{Sistemas de archivos distribuidos}
+\begin{itemize}
+\item Los dos esquemas presentados trabajan con una visión clara
+cliente/servidor
+\item Un sistema de archivos \emph{distribuído} busca crear recursos
+\emph{compartidos}, en que diversos equipos \emph{se repartan} la carga y
+\emph{compartan} sus recursos
+\begin{itemize}
+\item Buscando una \emph{fácil escalabilidad}
+\end{itemize}
+\item Problema complejo: Operar sin la certeza de que todos los nodos
+estén siempre conectados
+\item Implementación ejemplo: \emph{Andrew File System} (Carnegie Mellon
+University, 1989)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org42c1ee2}]{Lógica básica de Andrew File System}
+\begin{itemize}
+\item Uso típico en organizaciones grandes (>25,000 estaciones)
+\item Empleo agresivo de caché
+\item \emph{Ocultamiento / agnosticismo} a ubicación
+\begin{itemize}
+\item Un \emph{volumen} puede migrarse a través de una red mientras está
+siendo empleado
+\item Credenciales y ubicación provistos por un servicio \emph{Kerberos}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[label={sec:org96bb0a7}]{Modelo de Consistencia Débil (\emph{Weak Consistency Model})}
+\begin{itemize}
+\item Al abrir un archivo, se copia completo al cliente
+\begin{itemize}
+\item Lecturas y escrituras se dirigen a la copia local
+\end{itemize}
+\item Al cerrar el archivo, se copia de vuelta al \emph{servidor de origen}
+\begin{itemize}
+\item El \emph{servidor de origen} se \emph{compromete} a notificar a los
+clientes si un archivo abierto fue modificado (\emph{callback})
+\end{itemize}
+\item Los cambios a un archivo abierto por un usuario no son visibles de
+inmediato
+\item Una vez que se cierra un archivo, los cambios hechos a éste son
+sólo visibles a sesiones abiertas posteriormente
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgaca2ffa}]{Para qué sí es, para qué no}
+\begin{itemize}
+\item AFS está pensado para \emph{ciertos} tipos de uso, no para \emph{otros}
+\item Asume modificaciones a \emph{archivos completos}
+\begin{itemize}
+\item Es muy \emph{caro} mantener una base de datos compartida
+\item No hay bloqueos por rango
+\end{itemize}
+\item A diferencia de NFS, \emph{no} busca ser universal
+\begin{itemize}
+\item Necesariamente hay un \emph{espacio local} y un \emph{espacio compartido}
+\item No maneja \emph{diskless}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\end{document}

@@ -1,0 +1,1174 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Sistemas de archivos: Estructura en el dispositivo}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Sistemas de archivos: Estructura en el dispositivo},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Definiciones base}
+\label{sec:org5085b45}
+
+\begin{frame}[label={sec:orgc578195}]{Sistemas de archivos}
+\begin{itemize}
+\item Gestión del espacio de almacenamiento
+\item Probablemente el rol con más visibilidad de los que cubren los
+sistemas operativos
+\begin{itemize}
+\item Comprendido casi universalmente por los usuarios
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org709b448}]{Bajando de nivel}
+\begin{itemize}
+\item Entraremos directamente en detalles respecto a la organización de la
+información en un \emph{dispositivo persistente}
+\item Principales estructuras y mecanismos para \emph{implementar} un sistema
+de archivos \emph{en un medio físico}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgee1eace}]{Discos y otras hierbas}
+\begin{itemize}
+\item Cuando hablamos de almacenamiento, nos resulta natural hablar de \emph{discos}
+\begin{itemize}
+\item Disco: Medio giratorio, de acceso aleatorio
+\item Típicamente magnético u óptico
+\end{itemize}
+\item No siempre es el caso
+\begin{itemize}
+\item Primeros años del cómputo: Medios secuenciales (tarjetas o cintas,
+(de papel o magnéticas)
+\end{itemize}
+\item Hoy en día, tendencia a ir adoptando medios de \emph{estado sólido}
+\begin{itemize}
+\item Dispositivos sin partes móviles
+\item Guardan la información en un tipo de \emph{memoria} que no requiere
+corriente constante para mantener la información
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org802b3db}]{Mantengámosnos idealizados}
+\begin{itemize}
+\item El hablar de almacenamiento en estado sólido supone algunas
+consideraciones adicionales que no podemos perder de vista
+\item Por ahora, sigamos pensando en almacenamiento en \emph{discos}
+\item Pronto veremos algunas de estas características diferenciadoras
+\begin{itemize}
+\item Y el impacto que pueden tener en los sistemas de archivos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0872f99}]{¿Cómo se ve un disco?}
+\begin{itemize}
+\item \emph{Por ahora}, mantengamos la visión de un \emph{disco} como un arreglo
+muy grande
+\item De bloques, todos ellos de tamaño fijo (fijado por el \emph{hardware})
+\item Cada bloque, \emph{directamente direccionable}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org90230c5}]{Términos que se nos presentan}
+\begin{center}
+Para trabajar a \emph{este nivel} de la implementación, presentemos unos
+cuantos términos
+\end{center}
+\begin{itemize}
+\item Partición
+\item Volumen
+\item Metadatos
+\item I-nodo
+\item Mapa de bits de espacio libre
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org16d0f6d}]{Partición}
+\begin{itemize}
+\item Subdivisión de un disco
+\item El administrador del sistema puede emplearlas para definir la forma
+en que se emplea el espacio disponible
+\item Un disco puede tener cero, una o varias particiones
+\item Cada partición puede contener un sistema de archivos independiente
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0f359eb}]{Volumen}
+\begin{itemize}
+\item Colección de bloques en el disco
+\item \emph{Inicializados} con un sistema de archivos
+\item Pueden presentarse al usuario como una \emph{unidad}
+\item Típicamente coincide con una \emph{partición}
+\begin{itemize}
+\item Aunque veremos algunos casos en que no es así
+\end{itemize}
+\item Se \emph{describe} ante el sistema operativo en el \emph{bloque de control de volumen}
+\begin{itemize}
+\item O \emph{superbloque} (Unix), \emph{Tabla maestra de archivos} (\emph{MFT}, Windows)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org71a6946}]{Directorio raiz}
+\begin{itemize}
+\item Estructura base con la relación entre nombres de archivo y números
+de \emph{i-nodo}
+\item Típicamente (por rendimiento) sólo almacena los archivos del
+\emph{primer nivel jerárquico}
+\begin{itemize}
+\item Directorios interiores, referenciados desde éste
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org333db3b}]{Metadatos}
+\begin{itemize}
+\item Toda la información que haya \emph{acerca de} un archivo
+\begin{itemize}
+\item Que \emph{no sean} los datos pertenecientes al archivo mismo
+\end{itemize}
+\item En un sistema de archivos estándar:
+\begin{itemize}
+\item Nombre
+\item Tipo
+\item Tamaño
+\item Fechas de creación, último acceso y modificación
+\item Ubicación en disco
+\end{itemize}
+\item Ojo: \emph{¡No están en un sólo lugar!}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0c84faf}]{I-nodo}
+\begin{itemize}
+\item Viene de la expresión \emph{nodo de información}
+\item En sistemas Windows, frecuentemente se les llama \emph{Bloque de control
+del archivo} (FCB)
+\item La estructura en disco que guarda \emph{la mayor parte} de los metadatos
+da cada archivo
+\item Proporciona un vínculo entre la \emph{entrada en el directorio} y los
+contenidos del archivo
+\item Incluye permisos, propietario, tipo de archivo, fechas
+\item Incluye también la \emph{relación de bloques} que ocupa el archivo en
+disco
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2429633}]{Mapa de bits (\emph{bitmap}) de espacio libre}
+\begin{itemize}
+\item Auxiliar para gestionar el espacio \emph{libre} del disco
+\item Es una de varias estrategias para presentar esta información (no la
+única)
+\item Representa el estado de un bloque entero por cada bit
+\begin{itemize}
+\item Bastante compacto — con bloques de 4096 bytes, 100GB pueden
+representarse en 3MB (\(\frac{100 \times 10^9}{4096 \times 8}\))
+\item Razonable para mantener en memoria para un sistema de escritorio
+actual
+\item Y ha ido creciendo a una razón aceptable desde los \emph{viejos
+tiempos} (p. ej., 10KB para 40MB en sectores de 512 bytes, común
+hacia fines de los 1980s)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[label={sec:orgfba29b6}]{Ejemplificaremos con FAT}
+\begin{itemize}
+\item Para esta sección, iremos ejemplificando los conceptos
+refiriéndonos a una familia de sistema de archivos sencillo y
+ampliamente utilizada
+\begin{itemize}
+\item FAT — FAT12, FAT16, FAT32
+\end{itemize}
+\item Se origina a fines de los 1970, fue adoptado por diversas
+arquitecturas de los 1980
+\begin{itemize}
+\item Incluyendo, claro, IBM con MS-DOS
+\end{itemize}
+\item Sigue siendo uno de los sistemas más empleados del mundo
+\end{itemize}
+\end{frame}
+
+
+\section{El volumen}
+\label{sec:org2bb16e1}
+\begin{frame}[label={sec:orgb88c2b3}]{Base para emplear un sistema de archivos}
+\begin{itemize}
+\item El volumen es descrito por el superbloque
+\begin{itemize}
+\item \emph{No contiene} a los archivos, ni al directorio, ni estructuras
+que apunten hacia ellos
+\item Sólo información acerca del volumen
+\end{itemize}
+\item ¿Qué \emph{tipo} de sistema de archivos es?
+\item Descripción básica del sistema de archivos
+\begin{itemize}
+\item Extensión del sistema
+\item Tamaño de los \emph{bloques lógicos}
+\item Etiqueta que lo describa ante el usuario
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5a0767e}]{Bloques físicos y lógicos}
+\begin{itemize}
+\item El tamaño de los \emph{bloques físicos} es establecido por el hardware
+\begin{itemize}
+\item Tamaño de las transferencias del controlador al disco
+\end{itemize}
+\item Típicamente se \emph{agrupan} en \emph{bloques lógicos} (también llamados
+\emph{grupos} o \emph{clusters})
+\begin{itemize}
+\item Por razones de rendimiento
+\item Para alcanzar a direccionar mayor espacio
+\item Revisaremos este tema al hablar de el \emph{directorio}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org278aafa}]{Superbloque: Estructura repetida}
+\begin{itemize}
+\item El \emph{superbloque} es fundamental para poder abrir el sistema de
+archivos
+\item Es tan importante (y tan poco frecuentemente modificado) que se
+debe proteger de toda posible corrupción
+\item Muchos sistemas de archivos mantienen \emph{copias adicionales} del
+superbloque dispersas a lo largo del sistema de archivos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgac6277b}]{FAT: El superbloque}
+\begin{itemize}
+\item No guarda \emph{tanta} información en un sistema así de simple
+\item Indica principalmente la \emph{generación} del sistema de archivos
+(FAT12, FAT16, FAT32)
+\begin{itemize}
+\item 12, 16 o 32 bits para referenciar a cada uno de los bloques
+lógicos o \emph{clusters}
+\end{itemize}
+\item Indica el tamaño empleado en este volumen para los \emph{clusters}
+\begin{itemize}
+\item Desde 2 y hasta 32KB
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4d1b9b5}]{Volúmenes crudos}
+\begin{itemize}
+\item Una de los principales tareas de un sistema operativo es
+la organización del espacio de almacenamiento en sistemas de
+archivos
+\item Pero en algunos casos, puede tener sentido \emph{no} aprovechar esta
+característica
+\begin{itemize}
+\item Principalmente, por rendimiento
+\item Emplear un \emph{dispositivo orientado a bloques} sin emplear un
+sistema de archivos se denomina emplear \emph{dispositivos crudos} o
+\emph{dispositivos en crudo}
+\end{itemize}
+\item ¿Cuándo se usa?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7263807}]{Volúmenes crudos como \emph{espacio de intercambio}}
+\begin{itemize}
+\item La gestión de la \emph{memoria virtual} puede beneficiarse de \emph{no}
+cruzar por la abstracción del sistema operativo
+\item El espacio de intercambio (\emph{swap}) es manejado directamente, no a
+través de sistemas de archivos
+\item ¿Pero no es el gestor de memoria virtual parte del sistema
+operativo?
+\begin{itemize}
+\item El uso del dispositivo es en crudo, incluso si es desde espacio
+del sistema operativo
+\item Además, en un sistema \emph{microkernel} puede ejecutarse como proceso
+de usuario
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7308dd2}]{Volúmenes crudos para bases de datos}
+\begin{itemize}
+\item Varios gestores de bases de datos relacionales administran
+volúmenes muy grandes de datos
+\begin{itemize}
+\item Datos estrictamente estructurados
+\end{itemize}
+\item Algunos gestores pueden optimizar los accesos al disco evitando las
+capas de abstracción del sistema operativo
+\begin{itemize}
+\item Recomendado por Oracle, MaxDB, DB2, \ldots{}
+\end{itemize}
+\item Sin embargo, muchos gestores han abandonado esta modalidad
+\begin{itemize}
+\item Mayor complejidad de administración
+\item Mejoría de rendimiento muy limitada
+\end{itemize}
+\item Afirmación polémica, se presta a discusión e investigación
+\end{itemize}
+\end{frame}
+
+
+\section{El directorio}
+\label{sec:org708602b}
+\begin{frame}[label={sec:orga9a24fb}]{Rol del directorio}
+\begin{itemize}
+\item Estructura que relaciona a los archivos como son presentados al
+usuario –identificados por una ruta y un nombre
+\begin{itemize}
+\item Con las estructuras que los describen ante el sistema operativo —
+Los \emph{i-nodos}.
+\end{itemize}
+\item A lo largo de la historia de los sistemas de archivos, se han
+implementado muy distintos esquemas de organización
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1d13caa}]{El directorio raiz}
+\begin{itemize}
+\item Una vez que montamos un sistema de archivos, todas las referencias
+a archivos dentro de éste deben pasar a través del directorio raiz
+\begin{itemize}
+\item Y probablemente directorios adicionales
+\end{itemize}
+\item Está siempre en una \emph{ubicación bien conocida} en el disco,
+típicamente al inicio
+\begin{itemize}
+\item Por su frecuencia de uso, en los 1980, los diseñadores de AmigaOS
+decidieron ponerlo \emph{al centro}
+\item Sector 40 (de 80 que tenían los floppies)
+\item ¿Resultado? Reducción a la mitad de la demora por movimiento de cabezas
+\end{itemize}
+\item Sistemas Unix modernos: Esparcir los subdirectorios como
+mini-sistemas de archivos sobre todo el disco
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge02b387},fragile]{Formato del nombre de los archivos}
+ \begin{itemize}
+\item El directorio determina formato y restricciones para los nombres de
+archivos y directorios
+\item En un sistema moderno, es común que un archivo pueda tener hasta
+256 caracteres arbitrarios
+\begin{itemize}
+\item Incluyendo mayúsculas, minúsculas, espacios, acentos, \ldots{}
+\end{itemize}
+\item Hay sistemas de archivos \emph{sensibles a mayúsculas}, como los
+derivados de Unix (\texttt{ejemplo.txt} \(\ne\) \texttt{Ejemplo.TXT}) o \emph{insensibles
+a mayúsculas}, como los derivados de MS-DOS (\texttt{ejemplo.txt} =
+\texttt{Ejemplo.TXT})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org39ff5c5}]{FAT: Entrada de directorio}
+\begin{itemize}
+\item Esquema claramente antiguo de nombres de archivos
+\begin{itemize}
+\item 8 caracteres (+3 para la extensión)
+\item Expresado en mayúsculas; muy pocos caracteres legales no alfanuméricos
+\end{itemize}
+\item FAT \emph{no separa} entre directorio e i-nodo, como hoy es la norma
+\begin{itemize}
+\item Cada entrada en el directorio mide exactamente 32 bytes
+\end{itemize}
+\item Como ha tenido tantas generaciones, varios de los campos que veremos
+a continuación tienen más de un significado
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgfc86845}]{FAT: Entrada de directorio}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/entrada_directorio_fat.png}
+\caption{Formato de la entrada del directorio bajo FAT32 (longitudes en bytes) (\href{http://www.codeguru.com/cpp/cpp/cpp\\\_mfc/files/article.php/c13831/FAT-Root-Directory-Structure-on-Floppy-Disk-and-File-Information.htm}{Mohammed, 2007})}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org9100110}]{FAT: La extensión VFAT}
+\begin{itemize}
+\item Introducida junto con Windows 95 para permitir nombres de archivo largos
+\begin{itemize}
+\item Sin romper compatibilidad con la amplia base de sistemas ya existentes
+\end{itemize}
+\item El nombre \emph{real} de un archivo sigue siendo en formato 8.3
+\begin{itemize}
+\item Se pueden agregar \emph{entradas adicionales} al directorio, usando un
+atributo de \emph{etiqueta de volumen}
+\item Los sistemas MS-DOS ignoran dichas entradas
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9568012}]{FAT: La extensión VFAT}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/directorio_vfat.png}
+\caption{Entradas de directorio representando archivos (con y sin nombres largos) bajo VFAT}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgeb1b61f}]{FAT: Tamaño máximo del directorio}
+\begin{itemize}
+\item Bajo FAT12 y FAT16, el \emph{tamaño del directorio raiz} está limitado
+\item Está ubicado entre las FAT y el inicio de los datos
+\begin{itemize}
+\item Esto es, en los 14 bloques desde el 20 hasta el 33
+\end{itemize}
+\item En un floppy, le caben hasta \(512 \times 14 = 7168\) bytes
+\begin{itemize}
+\item A 32 bytes por entrada de FAT, \(\frac{7168}{32} = 224\) entradas
+como máximo
+\end{itemize}
+\item No está mal \emph{para un floppy}\ldots{}
+\begin{itemize}
+\item ¿Y considerando VFAT? El espacio disponible se reduce fuertemente
+\end{itemize}
+\item Por eso, FAT32 ya trata al directorio raiz como parte de la \emph{región de datos}
+\begin{itemize}
+\item Al igual que lo son todos los subdirectorios
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf061fcb}]{Directorios, ordenamiento y velocidad}
+\begin{itemize}
+\item El directorio es una estructura \emph{usada muy frecuentemente}
+\begin{itemize}
+\item Hay que optimizarla a su principal tipo de uso
+\end{itemize}
+\item Muy frecuentemente ocupa distintos sectores / clusters
+\begin{itemize}
+\item Si guardáramos el directorio \emph{ordenado}, cada modificación sería
+muy cara
+\begin{itemize}
+\item Crear, eliminar, renombrar archivos
+\end{itemize}
+\item Obligaría a reescribir el directorio \emph{entero}
+\end{itemize}
+\item El directorio típicamente se graba \emph{sin ordenar}, y en caso de
+requerirse presentar ordenado, se hace \emph{en espacio de usuario}
+\begin{itemize}
+\item Pero si el acceso típico es de lectura, puede tener sentido
+emplear un \emph{árbol} que asegure ordenamiento
+\item O un \emph{hash}, que asegure encontrar rápido los datos de \emph{un
+archivo} en particular
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2379ce2},fragile]{FAT: Eliminando archivos}
+ \begin{itemize}
+\item Cuando se crea un directorio, todas las entradas llevan en el campo
+de nombre caracteres \texttt{00} (\texttt{NUL})
+\item Dado que el tamaño del directorio es limitado, tenemos que poder
+\emph{reaprovechar} las entradas eliminadas del directorio
+\item Para hacer esto, podríamos \emph{marcar como eliminada} a una de las
+entradas, y mantenerla disponible para guardar sobre ella \emph{el
+siguiente archivo} que sea creado
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org60e82b1},fragile]{FAT: Eliminando archivos}
+ \begin{itemize}
+\item En FAT, \emph{eliminar} un archivo es muy barato
+\begin{itemize}
+\item Pero \emph{reaprovecharlo} es más caro
+\end{itemize}
+\item Una entrada en el directorio se muestra como \emph{eliminada} con sólo
+reemplazar el primer caracter de su nombre con \texttt{0xE5}
+\begin{itemize}
+\item Esto permite \emph{des-borrar} el archivo con sólo especificar su
+nombre de archivo
+\item Si la entrada no ha sido re-ocupada
+\end{itemize}
+\item Re-ocupar la entrada \emph{requiere marcar el espacio del archivo como
+libre}
+\begin{itemize}
+\item Lo explicaremos en un momento, una vez que veamos el
+funcionamiento de las \emph{tablas de asignación de archivos}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\section{Administración de espacio}
+\label{sec:orga6aee2d}
+
+\begin{frame}[label={sec:orga8c61e7}]{Sabemos \emph{qué hay}, pero\ldots{} \emph{¿Dónde está?}}
+\begin{itemize}
+\item Como vimos al hablar de directorios, éstos sólo relacionan al
+\emph{nombre de archivo} con su respectivo \emph{i-nodo}
+\begin{itemize}
+\item En el caso de FAT, incluyen \emph{algo} de metadatos, y apuntan al
+\emph{principio} de su sección de datos
+\end{itemize}
+\item Pero, ¿qué mecanismos hay para \emph{asignar, gestionar y manejar} el
+espacio que ocupa cada uno de los archivos?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org33e2907}]{Asignación contigua}
+\begin{itemize}
+\item Esquema empleado en los sistemas de archivos \emph{muy} antiguos
+\begin{itemize}
+\item Y en los diseñados para no modificación — p.ej. ISO9660
+\end{itemize}
+\item Bastaría con la información que tiene el directorio FAT
+\begin{itemize}
+\item \emph{Punto} de inicio del archivo
+\item Longitud total
+\end{itemize}
+\item Ventajas:
+\begin{itemize}
+\item Lo más simple de implementar
+\item La mejor velocidad (minimiza movimientos de cabezas)
+\end{itemize}
+\item Desventajas:
+\begin{itemize}
+\item Muy sensible a fragmentación externa
+\item Un archivo no puede \emph{crecer}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org65e01de}]{Asignación contigua de archivos}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.65\textheight]{../img/ditaa/fs_asignacion_contigua.png}
+\caption{Asignción contigua de archivos: Directorio con inicio y longitud}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org301cae4}]{Asignación ligada}
+\begin{itemize}
+\item Puede proveerse mucho más flexibilidad al usuario si se permite la
+fragmentación
+\item Cada \emph{entrada en el directorio} apunta a un \emph{grupo} (\emph{cluster})
+\begin{itemize}
+\item Cada cluster apunta al siguiente
+\item El último cluster indica que el archivo terminó
+\end{itemize}
+\item ¿Dónde se apunta al siguiente cluster?
+\begin{itemize}
+\item Puede reservarse un espacio al final de cada cluster
+(p.ej. clusters de 2044 bytes, reservando 4 bytes para el
+apuntador al siguiente cluster)
+\item Puede crearse una \emph{tabla maestra} con la asignación de clusters
+\emph{por bitmap}
+\end{itemize}
+\item Más \emph{sobrecarga administrativa} que la asignación contigua
+\begin{itemize}
+\item Se pierde más espacio \emph{apuntando al siguiente bloque}
+\end{itemize}
+\item FAT es un ejemplo de asignación ligada
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org43b5c7f}]{Asignación ligada}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/ditaa/fs_asignacion_ligada.png}
+\caption{Asignción ligada de archivos: Directorio con apuntador sólo al primer cluster}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org47b913e}]{Revisando la asignación ligada}
+\begin{itemize}
+\item Ventajas:
+\begin{itemize}
+\item Desaparece la fragmentación externa
+\item \emph{¡Ojo!} Eso no significa que no haya lo que \emph{los usuarios conocen}
+por fragmentación — Que es \emph{muy nocivo} para el rendimiento
+\end{itemize}
+\item Desventajas
+\begin{itemize}
+\item Mucho movimiento de cabezas \rarrow Rendimiento penalizado
+\item Si el apuntador está al final de los datos, \emph{imposibilidad de
+trabajar en acceso aleatorio}
+\item Fragilidad de metadatos: Si se pierde/corrompe un apuntador, los
+datos de dos archivos podrían resultar afectados
+\begin{itemize}
+\item El archivo dueño de ese bloque y el archivo al que ahora
+apuntaría por error
+\item Podría prevenirse/reducirse: Lista \emph{doblemente ligada},
+incluyendo \emph{apuntador al final}
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3b3df97}]{Asignación indexada}
+\begin{itemize}
+\item Crea una estructura intermedia entre el directorio y la asignación
+de bloques, exclusiva por archivo: El \emph{nodo de información} (\emph{i-nodo})
+\item Cada i-nodo guarda la lista de bloques del archivo
+\begin{itemize}
+\item Permite acceso aleatorio eficiente a todo el archivo
+\item Reduce la probabilidad de \emph{corrupción de apuntadores}
+\end{itemize}
+\item Potencialmente, mayor sobrecarga administrativa
+\begin{itemize}
+\item Al crear un archivo, se crea un i-nodo completo
+\item Si el archivo es pequeño, puede que el i-nodo sólo apunte a unos
+pocos clusters
+\item Pero el i-nodo mismo ocupa un cluster completo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org097c580}]{Eficiencia de caché por tipo de asignación}
+\begin{itemize}
+\item Mejoría en la eficiencia del caché
+\begin{itemize}
+\item Con la \emph{asignación contigua}, basta tener en caché el directorio
+para conocer todas las ubicaciones
+\item Con \emph{asignación ligada}, incluso con una tabla maestra, hay que
+hacer caché de \emph{toda la tabla}
+\item Con asignación indexada, basta hacer caché de \emph{lo que nos importa}
+(los archivos actualmente abiertos)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgba643ff}]{Asignación indexada}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.6\textheight]{../img/ditaa/fs_asignacion_indexada.png}
+\caption{Asignción indexada de archivos: Directorio con apuntador al i-nodo (llevado a un i-nodo de tamaño extremadamente ineficiente)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgc5a84ea}]{Apuntadores directos e indirectos}
+\begin{itemize}
+\item Al emplear asignación indexada, crece el espacio disponible en el
+directorio
+\begin{itemize}
+\item Prácticamente todos los metadatos se van al i-nodo
+\item Pero el espacio del i-nodo es también finito
+\end{itemize}
+\item Las direcciones en disco para un archivo \emph{razonablemente chico}
+pueden caber completamente en un sólo i-nodo \rarrow \emph{Apuntadores
+directos}
+\begin{itemize}
+\item P.ej. archivos \emph{rojo} y \emph{verde} del ejemplo anterior
+\end{itemize}
+\item Cuando un archivo tiene más bloques que los que caben en un i-nodo,
+éste asigna clusters adicionales con los \emph{niveles de indirección}
+requeridos
+\begin{itemize}
+\item P.ej. archivo \emph{azul} del ejemplo anterior
+\end{itemize}
+\item Pero los niveles de indirección pueden \emph{anidarse}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgdef2ee1}]{Apuntadores de indirección a varios niveles}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/dot/fs_apuntadores_indirectos.png}
+\caption{Estructura típica de un i-nodo en Unix, mostrando además el número de accesos a disco necesario para cada cluster}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org19b817c}]{La lógica de la indirección multinivel}
+\begin{itemize}
+\item Varios sistemas de archivos (la idea apareció originalmente en UFS,
+Unix de los 1980s) buscan dar un rendimiento \emph{acorde al tamaño del
+archivo}
+\begin{itemize}
+\item Aumentando los niveles de indirección según crece el archivo
+\end{itemize}
+\item Por ejemplo:
+\begin{itemize}
+\item Si en el bloque del i-nodo (que contiene también los metadatos)
+caben 100 apuntadores
+\item Y el tamaño de cluster fuera de 4K
+\item En un cluster vacío caben 128 apuntadores (\(4096 \over 32\))
+\end{itemize}
+\item Reservamos los \emph{últimos 3 apuntadores} para los \emph{bloques indirectos}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2541f57}]{Ejemplo de indirección multinivel (1)}
+\begin{itemize}
+\item Un archivo de hasta \((100-3) \times 4KB = 388KB\) puede
+ser representado directamente en el i-nodo
+\begin{itemize}
+\item Un sólo acceso a disco para obtener los clusters
+\end{itemize}
+\item Un archivo de hasta \((100-3 + 128) \times 4KB = 900KB\) puede
+representarse con el bloque de indirección sencilla
+\begin{itemize}
+\item Dos accesos a disco
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc773a23}]{Ejemplo de indirección multinivel (2)}
+\begin{itemize}
+\item Con el bloque de doble indirección, llegamos a \((100-3 + 128 + (128
+  \times 128) ) \times 4KB = 66436KB\)
+\begin{itemize}
+\item Hasta 131 accesos a disco
+\item ¡Va valiendo la pena que los múltiples niveles sean adyacentes!
+\end{itemize}
+\item Empleando triple indirección, hasta \((100-3 + 128 + (128
+  \times 128) + (128 \times 128 \times 128) ) \times 2KB = 8455044
+  \approx 8GB\)
+\begin{itemize}
+\item Pero hasta 16516 accesos a disco
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd9993c2}]{FAT: La tabla de asignación de archivos}
+\begin{itemize}
+\item El directorio de FAT apunta al \emph{primer} cluster que ocupa cada uno
+de los archivos \rarrow FAT maneja asignación ligada
+\item Tiene también un campo que indica la \emph{longitud total} del archivo
+\item Sin embargo, no es tan simple como indicar inicio + desplazamiento
+\item La estructura fundamental de FAT (incluso \emph{da su nombre} al sistema
+de archivos) es la \emph{Tabla de Asignación de Archivos} \rarrow \emph{File
+Allocation Table}
+\begin{itemize}
+\item Tan importante es esta estructura que se mantiene \emph{por duplicado}
+(triplicado en FAT12)
+\item Ante daño físico — Los discos antes eran mucho menos confiables
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgeb69804},fragile]{FAT: Leyendo la tabla de asignación de archivos}
+ \begin{itemize}
+\item Cada entrada de la FAT mide lo que la longitud \emph{correspondiente a su
+versión} (12, 16 o 32 bits), y puede tener uno de cuatro valores
+posibles:
+\begin{description}
+\item[{Libre}] \texttt{0x000}, \texttt{0x0000} o \texttt{0x00000000}
+\begin{itemize}
+\item El \emph{cluster} está libre
+\item Puede ser empleado por el sistema
+\end{itemize}
+\item[{Siguiente}] Valores hasta \texttt{0xFF6}, \texttt{0xFFF6} o \texttt{0xFFFFFFF6}
+\begin{itemize}
+\item Ubicación del \emph{siguiente cluster} del archivo
+\end{itemize}
+\item[{Dañado}] \texttt{0xFF7}, \texttt{0xFFF7} o \texttt{0xFFFFFFF7}
+\begin{itemize}
+\item El cluster es un espacio del disco dañado
+\item No debe ser utilizado para almacenar datos
+\end{itemize}
+\item[{Fin}] \texttt{0xFFF}, \texttt{0xFFFF} o \texttt{0xFFFFFFFF}
+\begin{itemize}
+\item Último cluster de un archivo.
+\end{itemize}
+\end{description}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5a317d4}]{FAT: Fragmentación por diseño}
+\begin{itemize}
+\item Por flexibilidad, FAT permite la \emph{fragmentación de archivos}
+\begin{itemize}
+\item Queda claro por el diseño del sistema: El descriptor en FAT de
+cada cluster \emph{debe apuntar} al siguiente
+\item Esto significa que muy frecuentemente los archivos \emph{no estarán
+contiguos}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4b0444b}]{FAT: Vista de la tabla de asignación de archivos}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/tabla_fat.png}
+\caption{Ejemplo de entradas en la tabla de asignación de archivos bajo FAT32}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org7029425}]{¿Cómo lidian con la fragmentación otros sistemas?}
+\begin{itemize}
+\item La fragmentación es uno de los puntos más débiles de FAT (y los
+sistemas operativos de su época)
+\item Una estrategia seguida por varios sistemas tipo Unix es la de los
+\emph{grupos de asignación}
+\item Los directorios (y los i-nodos dentro de éste) son ubicados
+\emph{esparcidos por el disco}
+\begin{itemize}
+\item Los archivos pertenecientes a un directorio son asignados \emph{cerca}
+de éste
+\item Esto garantiza menor desplazamiento de cabezas entre el
+directorio, el i-nodo y los datos
+\item Si no hay espacio para hacer una asignación contigua, los datos
+\emph{pueden} guardarse \emph{lejos} de su directorio
+\begin{itemize}
+\item Esto pasa implícitamente al usar \emph{ligas duras}
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7c15b4c}]{Evitando la fragmentación por grupos}
+\begin{itemize}
+\item La fragmentación \emph{se produce}
+\begin{itemize}
+\item Pero es mucho menos nociva
+\item Obtenemos sus ventajas con \emph{un mínimo} de sus desventajas
+\end{itemize}
+\item Importancia del espacio vacío
+\begin{itemize}
+\item Conforme se va llenando el disco, es más difícil encontrar espacio
+para seguir esta estrategia
+\end{itemize}
+\item Reserva de espacio
+\begin{itemize}
+\item Unix típicamente \emph{reserva} \(\approx 5\%\) \emph{para uso del administrador}
+\item Permite recuperar de situaciones críticas
+\item Busca también no llegar a los umbrales de saturación descritos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2c096f9},fragile]{FAT: ¿Y los subdirectorios?}
+ \begin{itemize}
+\item Vimos cómo está estructurado el \emph{directorio raiz}
+\item Vimos también que siempre está en un \emph{lugar bien conocido} en el
+disco
+\item ¿Qué hay con los subdirectorios?
+\end{itemize}
+\pause
+\begin{itemize}
+\item Un subdirectorio es \emph{sencillamente un archivo}
+\begin{itemize}
+\item De \emph{tipo especial}: El byte de \emph{atributos} (\texttt{0x0B}) vale 16
+\item Es almacenado en disco \emph{exactamente} como un archivo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf768b5d},fragile]{FAT: Los directorios y la fragmentación (1)}
+ \begin{itemize}
+\item Si un subdirectorio es un archivo especial, está sujeto a la fragmentación
+\item Cuando se asigna espacio para un subdirectorio, se asigna un sólo
+cluster
+\begin{itemize}
+\item 2048 bytes hasta 32768 bytes (64 a 1024 entradas)
+\item La ubicación del archivo apunta a donde éste está alojado; la FAT
+guarda \texttt{0xFFFF}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org41a2544},fragile]{FAT: Los directorios y la fragmentación (2)}
+ \begin{itemize}
+\item Cuando se llena este cluster, se agrega otro al final del directorio
+\begin{itemize}
+\item En la entrada en la FAT se apunta al nuevo sector; la del nuevo
+sector guarda \texttt{0xFFFF}
+\end{itemize}
+\item La lectura de un directorio con muchas entradas puede requerir
+muchos movimientos de cabeza
+\begin{itemize}
+\item Entre más grande el tamaño de cluster, más entradas por cluster
+\rarrow menos movimiento de cabezas
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Fallos y recuperación}
+\label{sec:org33cbb82}
+
+\begin{frame}[label={sec:org35c177f},fragile]{FAT: ¿Qué problemas podría haber?}
+ \begin{itemize}
+\item FAT es un sistema relativamente frágil
+\item Puede presentarse corrupción de metadatos
+\begin{itemize}
+\item Particularmente corrupción de la estructura de las FAT
+\end{itemize}
+\item ¿Qué hacen los programas \texttt{CHKDSK} o \texttt{SCANDISK}?
+\begin{itemize}
+\item Verifican que ambas copias del FAT \emph{concuerden}
+\item \emph{Desarrollan} cada una de las \emph{cadenas} que describen un archivo,
+buscando inconsistencias
+\end{itemize}
+\item Principales inconsistencias
+\begin{itemize}
+\item Archivos cruzados (\emph{Cross-linked file})
+\item Cadenas perdidas o \emph{huérfanas}
+\end{itemize}
+\item ¿Por qué ocurren estos problemas?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8b3e2d5}]{FAT: Principales inconsistencias}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\textwidth]{../img/dot/inconsistencias_fat.png}
+\caption{Principales inconsistencias que pueden presentarse en los sistemas de archivos tipo FAT}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org40e8ad7}]{Problema generalizado a los distintos sistemas de archivos}
+\begin{itemize}
+\item Prácticamente todos los sistemas de archivos tienen que cuidar estos
+aspectos
+\begin{itemize}
+\item Distintos \emph{síntomas} — A diferente organización de la información,
+diferentes probables fallos
+\end{itemize}
+\item Los \emph{controladores de disco inteligentes} agravan este problema
+\begin{itemize}
+\item Caché incorporado
+\item Notifican escrituras exitosas al sistema operativo antes de
+haberlas ejecutado
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf74da20}]{La coherencia del sistema de archivos}
+\begin{itemize}
+\item Cada operación en el sistema de archivos requiere varias
+modificaciones al disco
+\item Por ejemplo, para crear un archivo:
+\begin{itemize}
+\item Crear la entrada en directorio
+\item Encontrar los clusters a emplear
+\item Marcarlos en la tabla
+\item Guardar los datos
+\end{itemize}
+\item Si hay un fallo, corte de corriente, o el usuario retira el
+dispositivo antes de tiempo, puede que esta información se haya
+registrado sólo \emph{parcialmente}
+\begin{itemize}
+\item El sistema de archivos \emph{presenta inconsistencias} o \emph{está en un
+estado inconsistente}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7d2b823}]{Coherencia de datos \emph{vs.} metadatos}
+\begin{itemize}
+\item Hay que mantener en mente la separación entre \emph{datos} y \emph{metadatos}
+\item Si todos los cambios en las estructuras se realizaron, pero \emph{los
+datos del usuario} no se registraron al disco, \emph{no estamos} en un
+estado inconsistente
+\begin{itemize}
+\item Sí, hubo pérdida de información
+\item Pero \emph{la estructura} del sistema de archivos no presenta ningún problema
+\item No pone en riesgo ninguna \emph{operación posterior}, ni implica a
+otros archivos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2b32f43},fragile]{Verificación de la integridad}
+ \begin{itemize}
+\item Parte importante de los distintos sistemas de archivos son los
+\emph{programas de verificación de integridad}
+\begin{itemize}
+\item En Windows, \texttt{CHKDSK} y \texttt{SCANDISK}
+\item En Unix, \texttt{fsck.vfat}, \texttt{fsck.ext2}, etc.
+\end{itemize}
+\item Hacen un \emph{barrido} del sistema de archivos, buscando evidencias de
+inconsistencia
+\begin{itemize}
+\item Siguen todas las cadenas de clusters de archivos o tablas de
+i-nodos y verificando que no haya \emph{archivos cruzados}
+(compartiendo erróneamente bloques)
+\item Verifican que todos los directorios sean alcanzables
+\item Recalculando espacio vacío, bitmap de libres, etc.
+\end{itemize}
+\item Son siempre procesos \emph{intensivos} y complejos
+\begin{itemize}
+\item Y deben ejecutarse con el sistema de archivos \emph{fuera de línea} (o
+en \emph{sólo lectura})
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd861af8}]{Evitando o recuperando de estados inconsistentes}
+\begin{center}
+Hay dos estrategias principales para enfrentarse a los estados
+inconsistentes:
+\end{center}
+\begin{itemize}
+\item Actualizaciones suaves (\emph{soft updates})
+\item Sistemas de archivo con bitácora (\emph{journaling file systems})
+\item Sistemas de archivo estructurados en bitácora (\emph{log-structured
+file systems})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf10e8c6},fragile]{Actualizaciones suaves (\emph{soft updates})}
+ \begin{itemize}
+\item Organiza las escrituras a disco de modo que el estado resultante \emph{no
+pueda} ser inconsistente
+\begin{itemize}
+\item Permite inconsistencias \emph{no destructivas}: Marcar como asignado
+espacio libre
+\end{itemize}
+\item Verifica \emph{dependencias} antes de escribir
+\begin{itemize}
+\item Por ejemplo: No libera el espacio de un archivo antes de haber
+marcado su entrada como eliminada del directorio
+\end{itemize}
+\item El programa de verificación (\texttt{fsck}) se vuelve una tarea \emph{ejecutable
+en el fondo}, principalmente actuando como \emph{recolector de basura}
+\begin{itemize}
+\item Busca espacio marcado como asignado, pero no referenciado
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge5c0a4d}]{Actualizaciones suaves y archivos temporales}
+\begin{itemize}
+\item Puede ahorrarse por completo muchas escrituras a disco
+\begin{itemize}
+\item La creación de un archivo temporal (creación/obtención de
+descriptor/remoción) no tiene siquiera que llegar al disco
+\item El proceso puede escribir sus datos en \emph{espacio libre
+no-referenciado}, la estructura del sistema de archivos no se
+altera
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc8a556c}]{Uso de actualizaciones suaves}
+\begin{itemize}
+\item La idea fue presentada hacia 1999, e implementada en FreeBSD hacia
+2002
+\item Está implementado en UFS, empleado por varios sistemas operativos de
+la familia *BSD
+\item Pero no ha sido adoptado en otras familias de sistemas operativos
+\begin{itemize}
+\item NetBSD retiró el soporte en 2012 (v6.0), \emph{prefiriendo} el empleo
+de bitácora
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1506ab5}]{Sistemas de archivos con bitácora (\emph{journaling file systems})}
+\begin{itemize}
+\item Antes de efectuar cualquier operación \emph{de metadatos} (una
+\emph{transacción}), ésta se graba a una bitácora
+\begin{itemize}
+\item Una transacción puede comprender varias operaciones independientes
+\item La bitácora es típicamente una \emph{lista ligada circular}
+\item En algunas implementaciones, también los \emph{datos} mismos (aunque es
+poco común)
+\end{itemize}
+\item Periódicamente, se avanza por la bitácora, grabando las estructuras
+a disco, y avanzando el apuntador
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4a21364}]{Sistemas de archivos con bitácora (\emph{journaling file systems})}
+\begin{itemize}
+\item En caso de fallo, el sistema operativo:
+\begin{itemize}
+\item Lee dónde quedó el apuntador
+\item \emph{Avanza} las operaciones faltantes
+\item \emph{Converge} rápidamente a un sistema de archivos estable
+\end{itemize}
+\item Todas las operaciones deben ser \emph{idempotentes}
+\begin{itemize}
+\item Su ejecución repetida no debe alterar el resultado
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc2378c2}]{Sistemas de archivos con bitácora (\emph{journaling file systems})}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/dot/fs_journaling.png}
+\caption{Sistema de archivos con bitácora}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org16e38d1}]{Sistemas de archivos con bitácora (\emph{journaling file systems})}
+\begin{itemize}
+\item La bitácora \emph{no incluye} (por lo general) datos, \emph{sólo metadatos}
+\begin{itemize}
+\item Por rendimiento
+\item Porque la bitácora tendría que ser mucho más grande
+\end{itemize}
+\item Es el esquema más empleado hoy en día
+\item Presente en casi todos los sistemas de archivos modernos
+\item Ojo: \emph{No exime} de la verificación de sistema de archivos
+\begin{itemize}
+\item Sigue siendo necesaria periódicamente (periodos largos)
+\item Aunque no como procedimiento habitual tras una detención abrupta
+\item Se recomienda principalmente para recuperar ante efectos de bugs
+en la implementación
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org28dc351}]{Sistemas estructurados en bitácora (\emph{log-structured file systems})}
+\begin{itemize}
+\item Llevan el concepto de \emph{bitácora} al límite
+\item En vez de tener un área reservada para la bitácora, \emph{el total} del
+sistema de archivos es una gran bitácora
+\item Siguen una organización radicalmente diferente del resto de los
+sistemas de archivo
+\begin{itemize}
+\item Dependen de un \emph{caché agresivo} para la lectura
+\item Orientados a facilitar las escrituras, haciéndolas secuenciales
+\end{itemize}
+\item Aptos sólo para ciertos tipos de carga
+\begin{itemize}
+\item Tremendamente ineficientes para otros
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2917278}]{Sistemas estructurados en bitácora (\emph{log-structured file systems})}
+\begin{itemize}
+\item Siguen siendo en buena medida sujetos actualmente a investigación
+\item Hay varias implementaciones, pero casi todas se han
+detenido/abandonado
+\begin{itemize}
+\item O reducido fuertemente su ritmo de desarrollo
+\end{itemize}
+\item Pero han llevado al desarrollo de conceptos importantes que hoy se
+están aplicando en sistemas de archivo \emph{más estándar}
+\begin{itemize}
+\item Especialmente en el área de sistemas de archivos orientados a
+\emph{dispositivos no-magnéticos o no-rotativos}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\end{document}

@@ -1,0 +1,1212 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Planificación de procesos: Algoritmos de planificación}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Planificación de procesos: Algoritmos de planificación},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Introducción}
+\label{sec:org47607af}
+
+\begin{frame}[label={sec:orgea78ae4}]{Referencia para esta sección}
+\begin{center}
+Buena parte del material de esta unidad toma por referencia al
+capítulo 2 de \emph{An operating systems vade mecum} (Raphael Finkel,
+1988), \href{ftp://ftp.cs.uky.edu/cs/manuscripts/vade.mecum.2.pdf}{disponible para su descarga en el sitio Web del autor}.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgcbe6c5d}]{Principal decisión en un sistema multitareas}
+\begin{itemize}
+\item ¿Qué proceso es el siguiente a ejecutar?
+\begin{itemize}
+\item ¿Qué procesos han ido terminando?
+\end{itemize}
+\item ¿Qué \emph{eventos} ocurrieron que hacen que \emph{cambien de estado}?
+\begin{itemize}
+\item Solicitudes (y respuestas) de E/S
+\item \emph{Swap} de/a disco
+\end{itemize}
+\item ¿Cual es el siguiente proceso al que le toca atención del CPU?
+\begin{itemize}
+\item ¿Y por cuánto tiempo?
+\end{itemize}
+\end{itemize}
+\begin{center}
+Vemos que hay tres tipos muy distintos de planificación.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orge818494},fragile]{Planificador a largo plazo}
+ \begin{itemize}
+\item Cual es el siguiente proceso a ser iniciado
+\item Principalmente orientado a la operación \emph{en lotes}
+\begin{itemize}
+\item Principalmente a los sistemas con \emph{spool}
+\item También presente en la multiprogramación temprana
+\end{itemize}
+\item Decide en base a los requisitos \emph{pre-declarados} de los procesos, y
+a los recursos disponibles al ejecutarse
+\item Periodicidad: segundos a horas
+\item Hoy en día no se emplean
+\begin{itemize}
+\item El usuario indica expresamente qué procesos iniciar
+\item \emph{Podría verse} a los programas como \texttt{cron}, \texttt{at}, o en Windows al
+\emph{Planificador de procesos} como cubriendo este rol
+\begin{itemize}
+\item Aunque son procesos \emph{plenamente en espacio de usuario}
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7a0e8a7}]{Planificador a largo plazo}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\textwidth]{../img/dot/planificador_largo_plazo.png}
+\caption{Planificador a largo plazo}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org47ecf7d}]{Planificador a mediano plazo}
+\begin{itemize}
+\item Cuáles procesos hay que \emph{bloquear}
+\begin{itemize}
+\item Por escasez/saturación de algún recurso (p.ej. almacenamiento primario)
+\item Por haber iniciado una operación que no puede satisfacerse aún
+\end{itemize}
+\item Cuáles procesos hay que \emph{desbloquear}
+\begin{itemize}
+\item A la espera de algún dispositivo
+\item Fueron enviados a \emph{swap}, pero ya requieren o merecen ejecutarse
+\end{itemize}
+\item Frecuentemente llamado \emph{agendador} (\emph{scheduler})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4b1e0c8}]{Planificador a mediano plazo}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{../img/dot/planificador_mediano_plazo.png}
+\caption{Planificador a mediano plazo, o \emph{agendador}}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org72c3fce}]{Planificador a corto plazo}
+\begin{itemize}
+\item Cómo compartir \emph{momento a momento} al CPU entre todos los procesos
+\item Se efectúa decenas de veces por segundo
+\begin{itemize}
+\item Debe ser simple, eficiente y rápido
+\end{itemize}
+\item Se encarga de planificar los procesos \emph{listos para ejecución}
+\begin{itemize}
+\item Estados \emph{listo} y \emph{ejecutando}
+\end{itemize}
+\item Frecuentemente llamado \emph{despachador} (\emph{dispatcher})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org212e430}]{Planificador a corto plazo}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{../img/dot/planificador_corto_plazo.png}
+\caption{Planificador a corto plazo, o \emph{despachador}}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org6ea3529}]{Tipo de planificador según transición}
+\begin{columns}\begin{column}{0.6\textwidth}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.6\textheight]{../img/dot/estados_proceso.png}
+\caption{Diagrama de transición entre los estados de un proceso}
+\end{figure}
+\end{column} \begin{column}{0.4\textwidth}
+\begin{itemize}
+\item \alert{Largo plazo}: Admitir
+\item \alert{Mediano plazo}: Ocurrió evento, Esperar evento
+\item \alert{Corto plazo}: Activar ejecución, Tiempo terminado
+\end{itemize}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org9144e00}]{El enfoque de esta unidad}
+\begin{center}
+En esta unidad hablaremos particularmente del planificador \emph{a corto
+plazo}
+
+Cuando un proceso es \emph{suspendido} (o \emph{bloqueado}) y posteriormente
+reactivado, lo trataremos como \emph{un proceso nuevo}.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org8d5d7f1}]{Tipos de proceso}
+\begin{itemize}
+\item Diversos procesos tienen distintas características
+\item Alternan entre \emph{ráfagas} (\emph{bursts})
+\begin{description}
+\item[{CPU}] Trabajando con datos ya existentes en el sistema
+\item[{E/S}] Mayormente esperando a eventos de E/S
+\end{description}
+\item Un \emph{programa} dado puede ser \emph{mayormente} de un tipo u otro — Dicho
+programa está \emph{limitado por CPU} o \emph{limitado por E/S}
+\item Cuando termina una ráfaga de CPU y se suspende esperando E/S, deja
+de estar \emph{listo} y sale de la vista del \emph{despachador}
+\item Esto nos lleva a separar los procesos en\ldots{}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org16287cd}]{Tipos de proceso}
+\begin{center}
+\alert{Ojo: ¡Un poco contraintuitivo!}
+\end{center}
+\begin{description}
+\item[{Largos}] Han estado \emph{listos} o \emph{en ejecución} por mucho tiempo
+\begin{itemize}
+\item Esto es, están en una ráfaga de CPU
+\end{itemize}
+\item[{Cortos}] En este momento están en una ráfaga de E/S
+\begin{itemize}
+\item Requieren atención meramente ocasional del procesador
+\item Tienden a estar bloqueados, esperando a \emph{eventos}
+\begin{itemize}
+\item Como buena parte de los procesos interactivos
+\end{itemize}
+\end{itemize}
+\end{description}
+\end{frame}
+
+\section{Métricas}
+\label{sec:org8114c24}
+
+\begin{frame}[label={sec:org59fb334}]{Unidades a manejar}
+\begin{center}
+Para hablar de planificación del procesador, \emph{no} vamos a manejar
+tiempos \emph{estándar} (s, ms, ns), sino que:
+\end{center}
+\begin{description}
+\item[{\emph{Tick}}] Un tiempo mínimo dado durante el cual se puede realizar
+trabajo útil. Medida caprichosa y arbitraria.
+\begin{itemize}
+\item En Windows, un \emph{tick} dura entre 10 y 15 ms.
+\item En Linux (2.6.8 en adelante), dura 1 ms.
+\end{itemize}
+
+\item[{\emph{Quantum}}] Tiempo mínimo, expresado en \emph{ticks}, que se permitirá a
+un proceso el uso del procesador.
+
+\begin{itemize}
+\item En Windows, 2 a 12 \emph{ticks} (esto es, 20 a 180ms).
+\item En Linux, 10 a 200 \emph{ticks} (10 a 200ms)
+\end{itemize}
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org95ad44e}]{¿Qué es \emph{mejor}?}
+\begin{itemize}
+\item No hay un sólo criterio para definir qué es una \emph{mejor} respuesta
+\item El patrón correcto varía según el propósito del sistema
+\item Un proceso interactivo \emph{sufre} si el tiempo de respuesta incrementa,
+aunque pueda procesar por más tiempo corrido
+\begin{itemize}
+\item En caso de sufrir demoras, debemos intentar que sean
+\emph{consistentes}, aunque el \emph{tiempo promedio} resulte deteriorado
+\item Es mejor saber que el sistema \emph{siempre} tardará 0.5s en responder
+a mis necesidades a que unas veces responda de inmediato y otras
+tarde 3s.
+\pause
+\begin{itemize}
+\item ¿O no?
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8a00bb7}]{¿Qué métricas compararemos?}
+\begin{center}
+Para un proceso \(p\) que requiere ejecutarse por tiempo \(t\),
+\end{center}
+\begin{description}
+\item[{Tiempo de respuesta (\(T\))}] Tiempo total que toma el
+trabajo. Incluye el tiempo que pasó inactivo (pero listo).
+
+\item[{Tiempo en espera (\(E\))}] De \(T\), cuánto tiempo está esperando
+ejecutar. (\emph{Tiempo perdido})
+
+\begin{itemize}
+\item \(E = T - t\); Idealmente, para \(p\), \(E_p \rightarrow 0\)
+\end{itemize}
+
+\item[{Proporción de penalización (\(P\))}] Fracción del tiempo de respuesta
+durante la cual \(p\) estuvo en espera.
+\begin{itemize}
+\item \(P = \frac{T}{t}\)
+\end{itemize}
+
+\item[{Proporción de respuesta (\(R\))}] Fracción del tiempo
+de respuesta durante la cual \(p\) pudo ejecutarse.
+\begin{itemize}
+\item \(R = \frac{t}{T}\) ; \(R = \frac{1}{P}\)
+\end{itemize}
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:orge85eb26}]{Además de los anteriores, para el sistema\ldots{}}
+\begin{description}
+\item[{Tiempo núcleo o \emph{kernel}}] Tiempo que pasa el sistema en espacio de
+núcleo
+
+\item[{Tiempo desocupado (\emph{idle})}] Tiempo en que la cola de procesos
+listos está vacía y no puede realizarse ningún trabajo.
+\begin{itemize}
+\item El sistema operativo aprovecha este tiempo para realizar
+\emph{tareas de mantenimiento}
+\end{itemize}
+
+\item[{Utilización del CPU}] Porcentaje del tiempo en que el CPU está
+realizando \emph{trabajo útil}.
+\begin{itemize}
+\item Conceptualmente, entre 0 y 100\%
+\item En realidad, en un rango entre 40 y el 90\%.
+\end{itemize}
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org0d20553}]{Por ejemplo\ldots{}}
+\begin{center}
+Los siguientes procesos forman la \emph{cola de procesos listos}:
+
+\begin{center}
+\begin{tabular}{lrr}
+\hline
+Proceso & Ticks & Llegada\\
+\hline
+\(A\) & 7 & 0\\
+\(B\) & 3 & 2\\
+\(C\) & 12 & 6\\
+\(D\) & 4 & 20\\
+\hline
+\end{tabular}
+\end{center}
+
+Toma 1 \emph{tick} realizar un cambio de contexto; cada \emph{quantum} es de 5
+\emph{ticks}, y tenemos un ordenamiento \emph{de ronda}\footnote{Que pronto describiremos}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org680d860}]{Precisiones sobre el ejemplo}
+\begin{center}
+Nuestro ejemplo \emph{no es realista}
+\end{center}
+\begin{itemize}
+\item ¡El cambio de contexto propuesto es desproporcionadamente largo!
+(sólo para ejemplificar)
+\item Consideraremos al tiempo núcleo como si fuera un proceso más
+\begin{itemize}
+\item Midiendo \emph{como si iniciara y terminara} junto con los demás
+\item Normalmente el tiempo núcleo no se cuenta, es tomado por
+\emph{burocracia}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge57bb1f}]{Graficando nuestro ejemplo}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/planificador.png}
+\caption{Ejecución de cuatro procesos con \emph{quantums} de 5 \emph{ticks} y cambios de contexto de 1 \emph{tick}}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org971131c}]{Resolviendo nuestro ejemplo}
+\begin{center}
+\begin{center}
+\begin{tabular}{lrllll}
+Proceso & \(t\) & \(T\) & \(E\) & \(P\) & \(R\)\\
+\hline
+\(A\) & 7 &  &  &  & \\
+\(B\) & 3 &  &  &  & \\
+\(C\) & 12 &  &  &  & \\
+\(D\) & 4 &  &  &  & \\
+Promedio \emph{útil} &  &  &  &  & \\
+\hline
+Núcleo & 6 &  &  &  & \\
+\hline
+Promedio total &  &  &  &  & \\
+\end{tabular}
+\end{center}
+
+
+\begin{description}
+\item[{Tiempo kernel}] 
+
+\item[{Tiempo desocupado}] 
+
+\item[{Utilización del CPU}] 
+\end{description}
+\end{center}
+\end{frame}
+\begin{frame}[label={sec:org06fd653}]{Resultado de nuestro ejemplo}
+\begin{center}
+\begin{center}
+\begin{tabular}{lrrrrr}
+Proceso & \(t\) & \(T\) & \(E\) & \(P\) & \(R\)\\
+\hline
+\(A\) & 7 & 18 & 11 & 2.57 & 0.389\\
+\(B\) & 3 & 7 & 4 & 2.33 & 0.429\\
+\(C\) & 12 & 26 & 14 & 2.17 & 0.462\\
+\(D\) & 4 & 9 & 5 & 2.25 & 0.444\\
+Promedio \emph{útil} & 6.5 & 15 & 8.50 & 2.31 & 0.433\\
+\hline
+Núcleo & 6 & 32 & 26 & 5.33 & 0.188\\
+\hline
+Promedio total & 6.4 & 18.4 & 12.00 & 2.88 & 0.348\\
+\end{tabular}
+\end{center}
+
+\begin{description}
+\item[{Tiempo kernel}] 14 \emph{ticks}
+\item[{Tiempo desocupado}] 0 \emph{ticks}
+\item[{Utilización del CPU}] 26 \emph{ticks}
+\end{description}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orge4939a9}]{Frecuencias}
+\begin{center}
+Respecto al patrón de llegadas y salidas de procesos a la cola de
+procesos listos:
+\end{center}
+\begin{description}
+\item[{\(\alpha\)}] Frecuencia de llegada promedio
+\item[{\(\beta\)}] Tiempo de servicio requerido promedio
+\item[{\(\rho\)}] Valor de saturación, \(\rho = \frac{\alpha}{\beta}\)
+\end{description}
+\begin{center}
+Esto significa:
+\end{center}
+\begin{description}
+\item[{\(\rho = 0\)}] Nunca llegan procesos nuevos; el sistema estará desocupado
+\item[{\(\rho = 1\)}] Los procesos salen al mismo ritmo al que entran
+\item[{\(\rho > 1\)}] Los procesos llegan más rápido de lo que puede ser
+atendidos. La cola de procesos listos tiende a
+crecer. \(R\) disminuye para todos.
+\end{description}
+\end{frame}
+
+\section{Algoritmos de planificación}
+\label{sec:org4a64f62}
+\begin{frame}[label={sec:orgd641976},fragile]{¿Cuándo se ejecuta el \emph{despachador}?}
+ \begin{center}
+Cuando un proceso:
+\end{center}
+\begin{enumerate}
+\item Pasa de \emph{ejecutando} a \emph{en espera}
+\begin{itemize}
+\item p.ej. por solicitar E/S, sincronización con otro proceso, \emph{ceder
+el paso} (\texttt{yield})
+\end{itemize}
+\item Pasa de \emph{ejecutando} a \emph{listo}
+\begin{itemize}
+\item p.ej. al ocurrir una interrupción
+\end{itemize}
+\item Deja de estar \emph{en espera} para estar \emph{listo}
+\begin{itemize}
+\item p.ej. cuando finaliza la operación E/S que solicitó
+\end{itemize}
+\item Pasa de \emph{ejecutando} a \emph{terminado}
+\begin{itemize}
+\item Cuando finaliza su ejecución
+\end{itemize}
+\end{enumerate}
+\begin{center}
+Para la multitarea cooperativa, podrían ser sólo 1 y 4.
+\end{center}
+\end{frame}
+\begin{frame}[label={sec:org989df08}]{Nuestros procesos base}
+\begin{center}
+Para presentar los diferentes algoritmos, usarmos la siguiente tabla
+de procesos:
+
+\begin{center}
+\begin{tabular}{lrr}
+ & Tiempo de & Tiempo\\
+Proceso & llegada & requerido\\
+ &  & (\(t\))\\
+\hline
+A & 0 & 3\\
+B & 1 & 5\\
+C & 3 & 2\\
+D & 9 & 5\\
+E & 12 & 5\\
+Promedio &  & 4\\
+\end{tabular}
+\end{center}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org245e106}]{Primero llegado, primero servido (\emph{FCFS})}
+\begin{itemize}
+\item \emph{First Come, First Serve}.
+\begin{itemize}
+\item También referido como \emph{FIFO} (\emph{First In, First Out})
+\end{itemize}
+\item El esquema más simple de planificación
+\item Apto para multitarea cooperativa
+\item Cada proceso se ejecuta en órden de llegada
+\item Hasta que \emph{suelta el control}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org70c4a8d}]{Primero llegado, primero servido (\emph{FCFS})}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/planif_fcfs.png}
+\caption{Primero llegado, primero servido (FCFS)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgdf4fd7b}]{Primero llegado, primero servido (\emph{FCFS})}
+\begin{center}
+\begin{tabular}{lrrrrr}
+Proceso & Inicio & Fin & \emph{T} & \emph{E} & \emph{P}\\
+\hline
+A & 0 & 3 & 3 & 0 & 1\\
+B & 3 & 8 & 7 & 2 & 1.4\\
+C & 8 & 10 & 7 & 5 & 3.5\\
+D & 10 & 15 & 6 & 1 & 1.2\\
+E & 15 & 20 & 8 & 3 & 1.6\\
+\hline
+Promedio &  &  & 6.2 & 2.2 & 1.74\\
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org5206a6b}]{Primero llegado, primero servido (\emph{FCFS})}
+\begin{itemize}
+\item La \emph{sobrecarga administrativa} es mínima
+\begin{itemize}
+\item El algoritmo es extremadamente simple: una cola FIFO
+\item Efectúa el mínimo posible de cambios de contexto
+\item No requiere hardware de apoyo (temporizador / interrupciones)
+\item \(\rightarrow\) \emph{Principio de histéresis} (Finkel): ``Hay que
+resistirse al cambio''
+\end{itemize}
+
+\item El rendimiento percibido por los últimos procesos disminuye
+\begin{itemize}
+\item Los procesos cortos pueden esperar desproporcionadamente mucho
+tiempo
+\item La demora aumenta fuertemente conforme crece \(\rho\)
+\end{itemize}
+\item Tendencia a la inanición cuando \(\rho \ge 1\)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org524874e}]{Ronda (\emph{Round Robin})}
+\begin{itemize}
+\item Busca dar buena respuesta tanto a procesos cortos como largos
+\item Requiere multitarea preventiva
+\item Ejecutamos cada proceso por un \emph{quantum}
+\begin{itemize}
+\item Si no terminó su ejecución, se interrumpe y coloca de vuelta al
+final de la cola
+\item Los procesos nuevos se \emph{forman} también al final de esta misma
+cola
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org366de40}]{Ronda (\emph{Round Robin})}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/planif_rr1.png}
+\caption{Ronda (\emph{Round Robin})}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgfb5a51e}]{Ronda (\emph{Round Robin})}
+\begin{center}
+\begin{tabular}{lrrrrr}
+Proceso & Inicio & Fin & \emph{T} & \emph{E} & \emph{P}\\
+\hline
+A & 0 & 6 & 6 & 3 & 2.0\\
+B & 1 & 11 & 10 & 5 & 2.0\\
+C & 4 & 8 & 5 & 3 & 2.5\\
+D & 9 & 18 & 9 & 4 & 1.8\\
+E & 12 & 20 & 8 & 3 & 1.6\\
+\hline
+Promedio &  &  & 7.6 & 3.6 & 1.98\\
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgda4d406}]{Ronda (\emph{Round Robin})}
+\begin{itemize}
+\item Alta frecuencia de cambios de contexto
+\begin{itemize}
+\item A pesar de que el algoritmo es simple, la sobrecarga
+administrativa (\emph{burocracia}) es alta
+\end{itemize}
+\item Puede modificarse incrementando el \emph{quantum}
+\begin{itemize}
+\item Reduce la frecuencia de cambios de contexto
+\item Para valores grandes de \(q\), tiende a convertirse en FCFS
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6ea2859}]{Ronda (\emph{Round Robin}) con \(q = 4\)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/planif_rr4.png}
+\caption{Ronda (\emph{Round Robin}), con \(q=4\)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org14d5a07}]{Ronda (\emph{Round Robin}) con \(q = 4\)}
+\begin{center}
+\begin{tabular}{lrrrrr}
+Proceso & Inicio & Fin & \emph{T} & \emph{E} & \emph{P}\\
+A & 0 & 3 & 3 & 0 & 1.0\\
+B & 3 & 10 & 9 & 4 & 1.8\\
+C & 7 & 9 & 6 & 4 & 3.0\\
+D & 10 & 19 & 10 & 5 & 2.0\\
+E & 14 & 20 & 8 & 3 & 1.6\\
+\hline
+Promedio &  &  & 7.2 & 3.2 & 1.88\\
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org7bbbb64}]{El proceso más corto a continuación (SPN)}
+\begin{itemize}
+\item \emph{Shortest Process Next}
+\item Multitarea cooperativa
+\item Pero requerimos un algoritmo más \emph{justo} que FCFS
+\item Sabemos cuánto tiempo va a requerir cada proceso
+\pause
+\begin{itemize}
+\item No por \emph{magia}: Podemos estimar / predecir basados en su historia
+\begin{itemize}
+\item Recuerden: Un proceso puede \emph{entrar y salir} del ámbito del
+despachador
+\end{itemize}
+\item SPN puede mantener la contabilidad de los procesos incluso tras
+entregarlos de vuelta al agendador
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgce0d905}]{SPN con tiempos \emph{declarados}}
+\begin{center}
+Hace años, podía esperarse que los usuarios proporcionaran un estimado
+de sus tiempos de ejecución:
+\end{center}
+
+\begin{quote}
+{\small
+En un sistema que da alta prioridad a los procesos con estimación de
+tiempo corta, la política normal es terminar aquellos procesos que
+excedan sus límites estimados; de otro modo, los usuarios pronto
+arruinarían el esquema. En este caso, la mayoría de usuarios prefieren
+hacer predicciones conservadoras. Morris (1967) encuentra que los
+usuarios sobre-estimaron sus requisitos de almacenamiento por 50\%, y
+dice que ``las estimaciones en tiempo de procesamiento son mucho
+peores''
+
+\hfill –Per Brinch Hansen, 1973
+}
+\end{quote}
+\end{frame}
+
+\begin{frame}[label={sec:org6afce52}]{Estimando para SPN: Promedio exponencial}
+\begin{center}
+Es común emplear un \emph{promedio exponencial} para estimar la siguiente
+demanda de tiempo de \(p\): Si en su última invocación empleó \(q\)
+quantums,
+
+\(e_p' = fe_p + (1-f)q\)
+\vfill
+Donde \(0 \le f \le 1\) es el \emph{factor atenuante}, determinando qué tan
+\emph{reactivo} será el promedio a cada cambio.
+
+Es común que \(f \approx 0.9\)
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgdc30de9}]{Estimando para SPN: Promedio exponencial}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\textwidth]{../img/gnuplot/promedio_exponencial.png}
+\caption{Predicción de próxima solicitud de tiempo de un proceso basado en su historia.}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org3bb8f46}]{El proceso más corto a continuación (SPN)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/planif_spn.png}
+\caption{El proceso más corto a continuación (SPN)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org499eb31}]{El proceso más corto a continuación (SPN)}
+\begin{center}
+\begin{tabular}{lrrrrr}
+Proceso & Inicio & Fin & \emph{T} & \emph{E} & \emph{P}\\
+ &  &  &  &  & \\
+\hline
+A & 0 & 3 & 3 & 0 & 1.0\\
+B & 5 & 10 & 9 & 4 & 1.8\\
+C & 3 & 5 & 2 & 0 & 1.0\\
+D & 10 & 15 & 6 & 1 & 1.2\\
+E & 15 & 20 & 8 & 3 & 1.6\\
+\hline
+Promedio &  &  & 5.6 & 1.6 & 1.32\\
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgfb15674}]{El proceso más corto a continuación (SPN)}
+\begin{itemize}
+\item Obviamente, SPN favorece a los procesos cortos
+\begin{itemize}
+\item Un proceso largo puede esperar mucho tiempo antes de ser atendido
+\item Con \(\rho\) alto, los procesos largos sufren inanición
+\end{itemize}
+\item Con una cola de procesos listos chica, el resultado es similar a
+FCFS
+\begin{itemize}
+\item Pero vimos que una sóla permutación entre el órden de \(B\) y \(C\)
+redujo fuertemtente los factores de penalización
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf71f9a7}]{Variaciones sobre SPN: SPN preventivo (PSPN)}
+\begin{itemize}
+\item Emplea la estrategia de SPN, pero interrumpe cada \emph{quantum}
+\item Finkel observa que la penalización a procesos largos no es mucho
+peor que la de la ronda
+\item Mantiene mejores promedios, porque los procesos cortos salen más
+temprano de la cola.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6e66bbf}]{Variaciones sobre SPN: El más penalizado a continuación (HPRN)}
+\begin{itemize}
+\item \emph{Highest Penalty Ratio Next}
+\item Multitarea cooperativa
+\begin{itemize}
+\item Las alternativas (FCFS y SPN) parecen injustas para muchos proesos
+\item Busca otorgar un mejor balance
+\end{itemize}
+\item Todos los procesos incian con un valor de penalización \(P = 1\)
+\item Cada vez que un proceso es obligado a esperar un tiempo \(w\) por
+otro, \(P = \frac{w+t}{t}\) (acumulando \(w\))
+\item Se elige el proceso cuyo valor de \(P\) sea mayor
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5b7c823}]{El más penalizado a continuación (HPRN)}
+\begin{itemize}
+\item Mientras \(\rho < 1\), HPRN evita inanición incluso en procesos largos
+\item Finkel apunta que, ante la experimentación, HPRN se ubica siempre
+entre FCFS y SPN
+\item Principal desventaja: Es un algoritmo \emph{caro}
+\begin{itemize}
+\item Cuando hay muchos procesos en la cola, \(P\) tiene que calcularse
+para todos ellos a cada invocación del despachador
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[label={sec:org0738947}]{Mecanismos con múltiples colas}
+\begin{itemize}
+\item Hasta ahora, se evalúa cómo ordenar los procesos en la \emph{cola única}
+de procesos listos
+\item Dar trato diferenciado a procesos con perfiles distintos es complicado
+\item \ldots{} ¿Y si montamos \emph{distintas colas} de procesos listos?
+\begin{itemize}
+\item Asignando determinado \emph{patrón de comportamiento} a la migración de
+una cola a otra
+\item Dando un \emph{trato diferenciado} a los procesos de distintas colas
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org387f731}]{Mecanismos con múltiples colas}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.7\textwidth]{../img/dot/planif_multicolas.png}
+\caption{\label{fig:orgead3854}Representación de un sistema con cinco colas de prioridad y siete procesos listos}
+\end{figure}
+\end{frame}
+
+
+\begin{frame}[label={sec:org80cbbae}]{Retroalimentación multinivel (FB)}
+\begin{itemize}
+\item \emph{Multilevel Feedback}
+\item Multitarea preventiva
+\item Se crea no una, sino varias colas de procesos listos
+\begin{itemize}
+\item Cada cola con un distinto nivel de prioridad, \(C_P\)
+\end{itemize}
+\item El despachador toma el proceso al frente de la cola de más
+prioridad
+\item Tras \(n\) ejecuciones, el proceso es \emph{degradado} a \(C_{P+1}\)
+\item Favorece a los procesos cortos
+\begin{itemize}
+\item Terminan su trabajo sin ser marcados como de prioridad inferior
+\end{itemize}
+\item El algoritmo es \emph{barato}
+\begin{itemize}
+\item Sólo hay que actualizar a un proceso a cada ejecución, y evaluar un
+número limitado de colas
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb131b76}]{Retroalimentación multinivel (FB)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/planif_fb_bas.png}
+\caption{Retroalimentación multinivel (FB) básica. En la línea superior al proceso se muestra la cola antes del \emph{quantum} en que se ejecuta.}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org3807365}]{Retroalimentación multinivel (FB)}
+\begin{center}
+Fenómenos observados:
+\vfill
+Al \emph{tick} 8, 10, 11, 13, 14, el despachador interrumpe al proceso
+activo \emph{y lo vuelve a programar}
+\end{center}
+\begin{itemize}
+\item En una implementación ingenua, esto causa un cambio de contexto
+\begin{itemize}
+\item Burocracia innecesaria
+\end{itemize}
+\item ¿Puede prevenirse esta interrupción?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf61b5f5}]{Retroalimentación multinivel (FB)}
+\begin{center}
+\begin{tabular}{lrrrrr}
+Proceso & Inicio & Fin & \emph{T} & \emph{E} & \emph{P}\\
+ &  &  &  &  & \\
+\hline
+A & 0 & 7 & 7 & 4 & 1.7\\
+B & 1 & 18 & 17 & 12 & 3.4\\
+C & 3 & 6 & 3 & 1 & 1.5\\
+D & 9 & 19 & 10 & 5 & 2.0\\
+E & 12 & 20 & 8 & 3 & 1.6\\
+\hline
+Promedio &  &  & 9 & 5 & 2.04\\
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orga8da4b0}]{Retroalimentación multinivel (FB)}
+\begin{itemize}
+\item ¡Pero todos los números apuntan a que es una peor estrategia que
+las anteriores!
+\item Los únicos beneficiados son los recién llegados
+\begin{itemize}
+\item Entran a la cola de mayor prioridad
+\item Un proceso largo, a mayor \(\rho\), enfrenta inanición
+\end{itemize}
+\item El rendimiento del algoritmo puede ajustarse con dos variables
+básicas:
+\begin{description}
+\item[{\(n\)}] Cuántas ejecuciones para ser \emph{degradado} a \(C_{P+1}\)
+\item[{\(Q\)}] Duración del \emph{quantum} de las siguientes colas
+\end{description}
+\item Veamos cómo se comporta cuando:
+\begin{itemize}
+\item Mantenemos \(n = 1\)
+\item \(Q = 2^{nq}\) (donde \(q\) es la duración del \emph{quantum} base)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1d1a54a}]{Retroalimentación multinivel (FB)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/planif_fb_exp.png}
+\caption{Retroalimentación multinivel (FB) con \(Q\) exponencial}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgf393115}]{Retroalimentación multinivel (FB)}
+\begin{center}
+Fenómenos observados:
+\end{center}
+\begin{itemize}
+\item Aunque FB favorece a los procesos recién llegados, al \emph{tick} 3, 9 y
+10 los procesos que llegan son puestos en espera
+\begin{itemize}
+\item Llegaron a la mitad del \emph{quantum} largo de otro proceso
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc8e5308}]{Retroalimentación multinivel (FB)}
+\begin{center}
+\begin{tabular}{lrrrrr}
+Proceso & Inicio & Fin & \emph{T} & \emph{E} & \emph{P}\\
+ &  &  &  &  & \\
+\hline
+A & 0 & 4 & 4 & 1 & 1.3\\
+B & 1 & 10 & 9 & 4 & 1.8\\
+C & 4 & 8 & 5 & 3 & 2.5\\
+D & 10 & 18 & 9 & 4 & 1.8\\
+E & 13 & 20 & 8 & 3 & 1.6\\
+\hline
+Promedio &  &  & 7 & 3 & 1.8\\
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgce3facf}]{Retroalimentación multinivel (FB)}
+\begin{itemize}
+\item Con \(Q\) exponencial, los promedios resultan incluso mejores que
+\emph{ronda}
+\begin{itemize}
+\item Típicamente los incrementos son más suaves — \(Q=nq\) o incluso \(q=q\log(n)\)
+\item Un proceso largo con \(Q\) exponencial puede causar inanición por
+largo tiempo
+\end{itemize}
+\item Para evitar la inanición ante un \(\rho\) alto, puede considerarse la
+retroalimentación en sentido inverso
+\begin{itemize}
+\item Si un proceso largo es degradado a \(C_P\) y pasa demasiado tiempo
+sin ejecutarse, promoverlo de vuelta a \(C_{P-1}\)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org912153a}]{Retroalimentación multinivel (FB)}
+\begin{itemize}
+\item El mecanismo es muy flexible, y permite muchas mejorías simples
+\item Hoy en día es empleado por muchos de los principales sistemas operativos
+\begin{itemize}
+\item FreeBSD, Linux (pre-2.6), MacOS X, NetBSD, Solaris, Windows (2000
+en adelante) (ref: Wikipedia "Scheduling algorithm")
+\item Con diferentes parámetros y prioridades
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5b95f88}]{Ronda egoísta (SRR)}
+\begin{itemize}
+\item \emph{Selfish Round Robin}
+\item Multitarea preventiva
+\item Favorece a los proesos que \emph{ya llevan tiempo ejecutando} sobre los
+recién llegados
+\begin{itemize}
+\item Un proeso nuevo se forma en la cola de \emph{procesos nuevos}, el
+despachador avanza sólo sobre los \emph{procesos aceptados}
+\end{itemize}
+\item Parámetros ajustables:
+\begin{description}
+\item[{\(a\)}] Ritmo de incremento de prioridad de procesos \emph{aceptados}
+\item[{\(b\)}] Ritmo de incremento de prioridad de procesos \emph{nuevos}
+\end{description}
+\item Cuando la prioridad de un proceso nuevo \emph{alcanza} a la de uno
+aceptado, éste se acepta.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5a77aeb}]{Ronda egoísta (SRR)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/planif_srr.png}
+\caption{Ronda egoísta (SRR) con \(a = 2\) y \(b = 1\)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org2c7c595}]{Ronda egoísta (SRR)}
+\begin{center}
+\begin{tabular}{lrrrrr}
+Proceso & Inicio & Fin & \emph{T} & \emph{E} & \emph{P}\\
+ &  &  &  &  & \\
+\hline
+A & 0 & 4 & 4 & 1 & 1.3\\
+B & 2 & 10 & 9 & 4 & 1.8\\
+C & 6 & 9 & 6 & 4 & 3.0\\
+D & 10 & 15 & 6 & 1 & 1.2\\
+E & 15 & 20 & 8 & 3 & 1.6\\
+\hline
+Promedio &  &  & 6.6 & 2.6 & 1.79\\
+\end{tabular}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgb4e0594}]{Ronda egoísta (SRR)}
+\begin{itemize}
+\item Mientras \(\frac{b}{a} < 1\):
+\begin{itemize}
+\item Los procesos nuevos serán aceptados eventualmente
+\item Si el control va alternando entre dos procesos, su prioridad se
+mantendrá igual, y serán despachados por ronda simple
+\end{itemize}
+\item Si \(\frac{b}{a} \ge 1\), el proceso en ejecución terminará antes de
+que se acepte el nuevo \rarrow Tiende a FCFS
+\item Si \(\frac{b}{a} = 0\) (esto es, si \(b = 0\))
+\begin{itemize}
+\item Los procesos recién llegados son aceptados inmediatamente \rarrow
+Tiende a ronda
+\end{itemize}
+\item Si \(0 < \frac{b}{a} < 1\), la ronda es \emph{relativamente egoísta}
+\begin{itemize}
+\item Se da entrada a procesos nuevos
+\item Incluso si hay procesos muy largos ejecutando
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org790d9db}]{Clasificando a los distintos esquemas}
+\begin{center}
+Los siete algoritmos presentados pueden caracterizarse sobre dos
+descriptores primarios
+\end{center}
+\begin{description}
+\item[{Tipo de multitarea}] si el esquema está planteado para operar bajo
+multitarea \emph{preventiva} o \emph{cooperativa}
+\item[{Emplea información \emph{intrínseca}}] Si, para tomar cada decsión de
+planificación, emplean información propia (intrínseca) a los
+procesos evaluados, o no — Esto es, si el historial de ejecución
+de un proceso tiene impacto en cómo será planificado a futuro.
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org8bde01f}]{Clasificando a los distintos esquemas}
+\begin{table}[htbp]
+\caption{Caracterización de los mecanismos de planificación a corto plazo}
+\centering
+\begin{tabular}{lll}
+\hline
+ & \alert{No considera} & \alert{Considera}\\
+ & \alert{intrínseca} & \alert{intrínseca}\\
+\hline
+\alert{Cooperativa} & Primero llegado & Proceso más\\
+ & primero servido & corto (SPN),\\
+ & (FCFS) & Proceso más\\
+ &  & penalizado (HPRN)\\
+\hline
+\alert{Preventiva} & Ronda (RR) & Proceso más corto\\
+ &  & preventivo (PSPN),\\
+ &  & Retroalimentación (FB),\\
+ &  & Ronda egoísta (SRR)\\
+\hline
+\end{tabular}
+\end{table}
+\end{frame}
+
+
+\section{Esquemas híbridos y prioridades externas}
+\label{sec:orgc5d6144}
+\begin{frame}[label={sec:orgcc60c86}]{Esquemas híbridos}
+\begin{itemize}
+\item Los esquemas de planificación empleados normalmente usan \emph{mezclas}
+de los algoritmos presentados
+\item Permite emplear el algoritmo que más ventajas presente \emph{ante una
+situación dada}
+\begin{itemize}
+\item Y evitar algunas de sus deficiencias
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org70f6280}]{Esquemas híbridos: Algoritmo por cola en FB}
+\begin{itemize}
+\item Manejamos varias colas en un esquema FB
+\item Cada cola usa internamente un algoritmo distinto para elegir el
+proceso que está \emph{a la cabeza}. Algunas ideas como ejemplo:
+\begin{itemize}
+\item Una cola bajo PSPN: \emph{Empuja} a los procesos más largos hacia
+colas que sean interrumpidas con menor frecuencia
+\item Emplear SRR para las colas de menor prioridad
+\begin{itemize}
+\item Sus procesos ya esperaron mucho para tener respuesta; cuando
+obtienen el procesador, avanzan lo más ágilmente posible
+\item Pero no obstaculizan a los procesos cortos que van llegando
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org41e599c}]{Esquemas híbridos: Dependientes del estado del sistema}
+\begin{itemize}
+\item Podemos considerar también información \emph{extrínseca} para despachar
+\begin{itemize}
+\item Información \emph{externa} al estado y ejecución de cada uno de los
+procesos
+\item Información dependiente del estado del sistema, del tipo de
+usuario, etc.
+\end{itemize}
+\item A continuación, algunos ejemplos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7a3a634}]{Preventiva o cooperativa, dependiendo de \(\rho\)}
+\begin{itemize}
+\item Si los procesos son \emph{en promedio} cortos y \(\rho < 1\)
+\begin{itemize}
+\item Métodos con la mínima sobrecarga administrativa (FCFS o SPN)
+\item O un RR con \emph{quantum} muy largo (evitando los problemas de la
+multitarea cooperativa)
+\end{itemize}
+\item Si los procesos tienden a ser más largos o si sube \(\rho\)
+\begin{itemize}
+\item Cambiamos a RR con un \emph{quantum} más bajo o a PSPN
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org479d209}]{Ronda con \emph{quantum} dependiente de procesos pendientes}
+\begin{itemize}
+\item Esquema simple de ronda
+\item La duración de un \emph{quantum} es ajustada periódicamente
+\item Cada \emph{quantum} depende de la cantidad de procesos en el total de
+procesos listos, siguiendo \(Q=\frac{q}{n}\)
+\item Pocos procesos esperando
+\begin{itemize}
+\item Mayor \(Q \rightarrow\) Menos cambios de contexto
+\end{itemize}
+\item Muchos procesos esperando
+\begin{itemize}
+\item Menor \(Q\)
+\item Nunca más allá de un minimo, para evitar sobrecarga burocrática
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf27e056}]{Ronda + Prioridad externa}
+\begin{itemize}
+\item Usamos un esquema simple de ronda, con una sola cola
+\item La duración del \emph{quantum} dependerá de la prioridad \emph{externa}
+\begin{itemize}
+\item Fijada por el usuario o por el sistema por factores \emph{ajenos} al
+despachador
+\end{itemize}
+\item Un proceso de mayor prioridad ejecutará por mayor tiempo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd352f2e}]{\emph{Peor servicio a continuacion} (WSN)}
+\begin{itemize}
+\item Generalización sobre HPRN
+\item No sólo se considera penalización el tiempo esperado en la cola de
+procesos listos
+\begin{itemize}
+\item Veces que ha sido interrumpido por el temporizador
+\item Prioridad externa
+\item Espera por E/S u otros recursos
+\end{itemize}
+\item El proceso que ha \emph{sufrido peor servicio} es seleccionado para su
+ejecución
+\item Desventaja: Considerar demasiados factores (con distintos pesos)
+impacta en el tiempo de ejecución del algoritmo
+\begin{itemize}
+\item Puede llamarse a WSN periódicamente para formar colas
+\item Proceder con esquemas más simples
+\item \ldots{}Aunque esto reduce la velocidad de reacción
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgae282d6},fragile]{\emph{Lindura} (\emph{niceness})}
+ \begin{itemize}
+\item Empleado por varios Unixes históricos
+\item El usuario inicia (\texttt{nice}) o modifica (\texttt{renice}) la prioridad de su
+proceso
+\begin{itemize}
+\item Típicamente sólo \emph{hacia arriba} — Se porta \emph{más lindo}.
+\end{itemize}
+\item Esta prioridad \emph{externa} y el tiempo consumido recientemente por el
+proceso constituyen una prioridad \emph{interna}
+\item La prioridad interna aumenta cuando el proceso espera
+\begin{itemize}
+\item Por el despachador, por E/S, o cualquier otra causa
+\end{itemize}
+\item La prioridad interna es matizada por el tamaño de la cola de
+procesos listos
+\begin{itemize}
+\item Entre más procesos pendientes, mayor el peso que \emph{modifique} a la
+prioridad
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6d2057e}]{\ldots{}¡Hora de otra tarea!}
+\begin{itemize}
+\item Implementar y comparar los algoritmos \emph{más sencillos}
+\begin{itemize}
+\item En su lenguaje favorito
+\item FCFS, RR (¿duración de quantum?), SPN
+\item ¿Quieren divertirse? FB, SRR, alguno más
+\end{itemize}
+\item Bajo \emph{algunas} cargas, no sólo sobre una carga ejemplo
+\begin{itemize}
+\item Generadas de forma aleatoria
+\end{itemize}
+\item Presentar los resultados de varias ejecuciones
+\begin{itemize}
+\item Unos cinco resultados, para poder comparar un poco las tendencias
+\item ¡Verifiquen manualmente algunos de los resultados!
+\end{itemize}
+\item (Y claro: Presentar el código)
+\item Entrega vía plataforma: \emph{una semana desde hoy}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6ec8ffc},fragile]{Ejemplo de resultados}
+ \begin{verbatim}
+$ compara_planif
+- Primera ronda:
+  A: 0, t=3; B: 1, t=5; C: 3, t=2; D: 9, t=5; E: 12, t=5 (tot:20)
+  FCFS: T=6.2, E=2.2, P=1.74
+  RR1:  T=7.6, E=3.6, P=1.98
+  RR4:  T=7.2, E=3.2, P=1.88
+  SPN:  T=5.6, E=1.6, P=1.32
+- Segunda ronda
+  A: 0, t=5; B: 3, t=3; C: 3, t=7; D: 7, t=4; E:8, t=4 (tot:23)
+  (...)
+\end{verbatim}
+\end{frame}
+\end{document}

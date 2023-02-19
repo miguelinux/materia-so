@@ -1,0 +1,860 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Virtualización}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Virtualización},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Introducción}
+\label{sec:org93ab1e7}
+\begin{frame}[label={sec:org526199d}]{¿Qué significa \emph{virtualizar}?}
+\begin{itemize}
+\item Proveer algo que no está allí, aunque parece estarlo
+\item Ofrecer y mantener una ilusión
+\begin{itemize}
+\item Un truco de magia
+\end{itemize}
+\end{itemize}
+
+\begin{center}
+La \emph{virtualización} es, en términos generales, ofrecer recursos que no
+existen en realidad — Y mantener la ilusión, tan bien como sea
+posible.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org61472d6}]{Ámbitos de virtualización}
+\begin{itemize}
+\item Es un término \emph{de moda}, que nos encontraremos cubriendo muy
+distintas tecnologías
+\item Lleva existiendo –de diferentes maneras– muchas décadas
+\item Cubriremos algunas estrategias y tecnologías de virtualización
+comunes hoy en día
+\begin{itemize}
+\item Con diferentes usos y propósitos
+\item Muchos de los cuales utilizamos día a día sin pensar en ello
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd72afb5}]{¿Diferentes tecnologías?}
+\begin{itemize}
+\item Muchas cosas pueden ser entendidas por \emph{virtualización}
+\item Hay muchos diferentes casos de uso, y cada uno requiere una
+solución diferente
+\item Incluso para un mismo caso de uso, hay más de una manera de llegar
+al mismo resultado
+\begin{itemize}
+\item Hay espacio para que la \emph{selección natural} haga su trabajo
+\end{itemize}
+\item Las diferentes tecnologías no tienen líneas divisorias tan claras
+\begin{itemize}
+\item Un proyecto pueden caer en varias clasificaciones
+\item O ser originalmente de un tipo, e ir migrando \emph{naturalmente}
+hacia otro
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Emulación}
+\label{sec:org948526b}
+\begin{frame}[label={sec:org993e167}]{¿Qué es \emph{emular}?}
+\begin{itemize}
+\item La técnica de virtualización disponible hace más tiempo en
+\emph{computadoras personales}
+\item El \emph{procesador anfitrión} traduce cada una de las instrucciones,
+simulando \emph{en tiempo de ejecución} hardware inexistente
+\item Fue muy popular hacia la segunda mitad de los 1980 y a principios de
+los 1990, durante la explosión de las arquitecturas
+\item Es \emph{altamente} ineficiente — Resulta muy caro en tiempo de cómputo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgea795ae}]{¿Emular o simular?}
+\begin{itemize}
+\item Un \emph{emulador} busca \emph{imitar} el \emph{comportamiento completo} del
+sistema destino
+\begin{itemize}
+\item Emular: \emph{Imitar las acciones de otro, procurando igualarlo o
+superarlo} (WordReference.com)
+\item Reproduce \emph{todos los procesos internos}
+\item Implementa \emph{los mismos} mecanismos
+\end{itemize}
+\item Un \emph{simulador} simula o finge las \emph{áreas de interés} del sistema destino
+\begin{itemize}
+\item Puede emplear datos para generar respuestas predefinidas, obviando
+(brincándose) procesos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd37d659}]{¿Emular o simular? Un ejemplo}
+\begin{center}
+Un \emph{simulador de vuelo} no nos lleva a ningún lugar, aunque presente
+una cabina como la de un avión real
+\vfill
+Un \emph{emulador} busca ejecutar software arbitrario \emph{sin que éste
+detecte la diferencia}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgc631a6f}]{Emulación de una arquitectura existente}
+\begin{itemize}
+\item Se puede hacer a diferentes profundidades
+\begin{itemize}
+\item Desde emular el sistema completo (juego de instrucciones, chipset,
+buses, etc.)
+\item Hasta emular únicamente \emph{parte} del chipset (muy común en
+arquitecturas m680x0)
+\end{itemize}
+\item La arquitectura \emph{Amiga} de Commodore es la primera de uso personal
+en ofrecer varios programas emuladores
+\begin{itemize}
+\item Macintosh y Atari ST (misma plataforma m680x0) a velocidad nativa
+\item Plataforma PC, pero \emph{muy, muy} lenta (incluso XT 8088)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3812a26}]{Utilidad actual de la emulación}
+\begin{itemize}
+\item A difrencia de lo que ocurría hace 20 años, hoy en día este tipo de
+emulación es muy socorrido en el ``mundo real''
+\item Los sistemas \emph{embebidos} son cada vez más comunes
+\begin{itemize}
+\item Computadoras pequeñas, limitadas en recursos (memoria,
+almacenamiento, velocidad)
+\item Diseñadas para correr con el menor consumo energético posible
+\item Aún a costa de un menor rendimiento
+\end{itemize}
+\item Celuluares, cámaras, ruteadores, scanners, controladores de equipo
+industrial\ldots{}
+\begin{itemize}
+\item Parte muy importante del mercado
+\end{itemize}
+\item Emular m680x0 o ARM en un buen equipo de escritorio resulta en
+velocidad comparable al hardware nativo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgdc89f80}]{Emulando arquitecturas inexistentes}
+\begin{itemize}
+\item También podemos emular una arquitectura que \emph{nunca ha sido
+implementada}
+\item La idea viene también de los 1970
+\begin{itemize}
+\item En pos de la portabilidad, UCSD definió un \emph{p-system}, a ser
+ejecutado en una \emph{p-machine}
+\item Esta computadora nunca existiría en realidad, pero varias
+arquitecturas existentes ofrecerían \emph{emuladores de p-machines}
+\end{itemize}
+\item La arquitectura de la \emph{p-machine} está definida en torno al lenguaje
+Pascal
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org04b54b6}]{Emulando arquitecturas inexistentes}
+\begin{itemize}
+\item Todo programa hecho para correr en una \emph{p-machine} correría en
+cualquier arquitectura que lo implementara
+\item Los \emph{p-systems} gozaron de relativa popularidad hasta mediados de
+los 1980, con implementaciones en arquitecturas 6502, Z80 y 80x86
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb79cb1b}]{Arquitecturas emuladas, de uso diario — E inexistentes}
+\begin{itemize}
+\item En la década de los 1990, Sun Microsystems retomó las ideas de los
+\emph{p-systems}, y diseñó la arquitectura \emph{Java}
+\item Java está pensado para ser una arquitectura idealizada
+\begin{itemize}
+\item Nativamente orientada a objetos
+\item Buscando dar una completa \emph{portabilidad} al código
+\item Slogan: \emph{Write Once, Run Anywhere}
+\end{itemize}
+\item Microsoft retomó varios años más tarde esta misma idea, creando la
+arquitectura \emph{.NET}
+\begin{itemize}
+\item Su principal contribución es plantear a la máquina virtual como
+independiente del lenguaje de programación
+\end{itemize}
+\item Desde el 2000, las comunidades (principalmente) de \emph{Perl} y \emph{Python}
+han implementado \emph{Parrot}
+\begin{itemize}
+\item Máquina virtual apta para lenguajes de script
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf2545bd}]{Esquema de la arquitectura \emph{.NET}}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/maquina_virtual_dotnet.png}
+\caption{Arquitectura de la infraestructura de lenguajes comunes (CLI) de .NET (Imagen: Wikipedia)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org96e5fcf}]{¿Por qué utilizar/emular estas arquitecturas?}
+\begin{itemize}
+\item Las abstracciones presentadas por estas máquinas virtuales resultan
+demasiado complejas para ser implementadas directamente en hardware
+\item Son, sin embargo, muy útiles al programador, que sabrá sacarles buen
+jugo
+\item Sun diseñó la arquitectura \emph{MAJC} (1999) para ejecutar directamente
+código Java
+\begin{itemize}
+\item Los chips resultaban demasiado complejos y caros
+\item Fracaso comercial
+\end{itemize}
+\item MAJC implementaba una arquitectura VLIW y optimización basada en
+múltiples hilos de ejecución
+\begin{itemize}
+\item Ideas retomadas para generaciones actuales de CPUs
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgdd0d488}]{\emph{Transmeta}: El procesador emulador}
+\begin{itemize}
+\item En el 2000, \emph{Transmeta} anunció su procesador \emph{Crusoe}, orientado al
+mercado de bajo consumo energético
+\item Su arquitectura está diseñada para ejecutar código \emph{diseñado para
+otras arquitecturas}
+\begin{itemize}
+\item Traducido a través del microcódigo: \emph{Code Morphing Software}
+(\emph{Software de transformación de código})
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org5ac94d2}]{\emph{Transmeta}: El procesador emulador}
+\begin{itemize}
+\item La única arquitectura implementada en CMS es la Intel x86
+\begin{itemize}
+\item Pero las dos generaciones de procesadores Transmeta (Crusoe y
+Efficeon) son completamente distintas
+\item Gracias a CMS, esta difrencia es transparente al usuario
+\end{itemize}
+\item Tecnología muy interesante, y aplicada ya fuera de Transmeta
+\begin{itemize}
+\item A pesar de esto, Transmeta colapsó como empresa.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3d2e6c4}]{La emulación, mejorada}
+\begin{itemize}
+\item Las técnicas utilizadas para la emulación han mejorado tremendamente
+en los úlitmos diez años
+\item Los emuladores hacen hoy traducción predictiva y compilación del
+código a ejectuar a formatos nativos (traducción dinámica)
+\item También guardan copias convertidas/compiladas del código a emular
+\begin{itemize}
+\item \emph{Compilador JIT} — \emph{Just in Time}; \emph{Compilador Justo a Tiempo}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8e2ab8c}]{La emulación, mejorada}
+\begin{itemize}
+\item En líneas generales, la vieja fama de la lentitud de las máquinas
+virtuales ya no se justifica
+\item Las máquinas virtuales pueden llamar a código nativo para puntos
+críticos donde haga falta optimización
+\item \ldots{}Y las usamos transparentemente, todos los días
+\end{itemize}
+\end{frame}
+
+\section{Virtualización por hardware}
+\label{sec:org8322fc1}
+\begin{frame}[label={sec:orgd3ab02f}]{Virtualización asistida por hardware (HVM)}
+\begin{itemize}
+\item Buena parte del \emph{ruido} que hoy en día recibe la virtualización es a
+consecuencia de esta modalidad
+\item Algunas arquitecturas de cómputo incluyen provisiones para ser
+\emph{virtualizadas}
+\begin{itemize}
+\item Especialmente máquinas diseñadas como \emph{grandes}
+\end{itemize}
+\item Primer ejemplo: IBM S/360-67
+\begin{itemize}
+\item Sistema operativo CP-67/CMS (1968-1972)
+\item Sistema operativo ligero, monousuario
+\item Pensando en que siempre habría \emph{múltiples instancias} del sistema
+operativo en ejecución bajo el \emph{hipervisor} CP
+\end{itemize}
+\item Computadoras inherentemente de \emph{tiempo compartido}, dando a sus
+usuarios la \emph{ilusión} de tener una computadora dedicada a ellos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org943ebed}]{La motivación detrás de CP67/CMS}
+\begin{itemize}
+\item Motivación de la virtualización:
+\begin{itemize}
+\item Maximizar el aprovechamiento de recursos
+\item Proveer administración centralizaa
+\end{itemize}
+\item Al virtualizar el sistema \emph{completo}, este sistema ofrece mayor
+aislamiento, seguridad y confiabilidad que cualquier sistema de
+\emph{tiempo compartido}
+\item Permite además correr cualquier programa diseñado para una máquina
+S/360, incluso si no estaba diseñado para tiempo compartido
+\item IBM reimplementó este sistema como VM/370, al contar con una
+arquitectura de memoria virtual
+\item z/VM, derivado de este, sigue ampliamente en uso hoy en día
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga5035f5}]{CP/CMS y VM como software libre}
+\begin{itemize}
+\item CP/CMS fue distribuido directamente como código fuente
+\item Desde un principio se desarrolló una activa comunidad de usuarios
+estudiando y modificando el código fuente
+\item Por fricciones políticas dentro de IBM, tanto VM com CP/CMS fueron
+también distribuídos como parte de las \emph{bibliotecas no soportadas}
+en la colección \emph{Type-III}
+\item Hoy en día se pueden bajar estos sistemas y ejectutarlos
+\begin{itemize}
+\item Dentro del emulador \emph{Hercules} de sistemas S/370, S/390 y zSeries
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgcfea364}]{El \emph{hipervisor}: Más abajo que el núcleo}
+\begin{itemize}
+\item Tradicionalmente las arquitecturas virtualizables corren un
+micro-sistema operativo encargado de gestionar a \emph{cada uno de los
+sistemas operativos} que corre en cada una de las máquinas virtuales
+\begin{itemize}
+\item Es un \emph{micro} SO porque no cubre muchas de las áreas clásicas
+(sistemas de archivos, comunicación entre procesos, gestión de
+memoria virtual, \ldots{})
+\item Se limita a gestión básica de memoria física contigua, asignación
+de dispositivos, y \emph{poco} mas que eso
+\item Ojo: Hay hipervisores que son sistemas operativos completos (como
+KVM bajo Linux)
+\end{itemize}
+\item Este micro-SO es conocido como el \emph{hipervisor}
+\begin{itemize}
+\item Dando a entender que hace más que \emph{supervisar}, el rol tradicional
+del SO
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4666dcc}]{Hipervisor oculto}
+\begin{itemize}
+\item Idealmente, el núcleo de cada una de las máquinas virtuales \emph{no sabe
+siquiera} que está siendo ejecutado dentro de un hipervisor
+\begin{itemize}
+\item La ilusión es completa
+\end{itemize}
+\item En algunas arquitecturas puede incluso haber múltiples niveles de
+hipervisores
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgeef2f4a}]{El panorama hasta \(\approx\) 2005}
+\begin{itemize}
+\item Las arquitecturas que proveían virtualización por hardware eran muy
+especializadas
+\begin{itemize}
+\item Muy caras, fuera del alcance de los usuarios en general
+\item Fuera del alcance incluso de la mayor parte de los desarrolladores
+\end{itemize}
+\item En 2005, Intel lanza la \emph{Vanderpool Technology} para sus
+procesadores x86 (extensión \emph{VT-x})
+\item En 2006, AMD lanza los procesadores con \emph{extensiones Pacifica}
+\item Hoy en día, casi todas las computadoras de escritorio rango
+medio-superior vienen con soporte para HVM
+\item El tema era tan novedoso que tardó algunos años en desarrollar
+tracción
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgca1eef3}]{Estabilidad por virtualización}
+\begin{itemize}
+\item Es aceptado universalmente que la mayor parte fuente de
+inestabilidad en los sistemas operativos son los drivers
+\begin{itemize}
+\item Es código típicamente más \emph{sucio} que el de otras partes del
+núcleo
+\item Proviene de todo tipo de fuentes, desde desarrolladores
+independientes hasta las compañías desarrolladoras del hardware
+\end{itemize}
+\item Dando control de calidad a los manejadores de los dispositivos
+emulados/virtualizados, podemos lograr que los sistemas operativos
+huésped sean \emph{más estables} de lo que serían sobre el hardware real
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org275db0b}]{Estabilidad por virtualización}
+\begin{itemize}
+\item Típicamente el hipervisor ofrecerá a los huéspedes dispositivos
+relativamente viejos y simples
+\begin{itemize}
+\item Red NE2K
+\item sonido Soundblaster16
+\item video Cirrus
+\item \ldots{}
+\end{itemize}
+\item Las prestaciones máximas del hardware \emph{no están limitadas} por las
+características del hardware emulado — Sólo su interfaz al sistema
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org210ae3f},fragile]{HVM, pero sin hardware}
+ \begin{itemize}
+\item La primer versión públicamente descargable de VMWare fue liberada en
+1998
+\begin{itemize}
+\item Por parte del software libre, \texttt{kqemu} fue presentado (gratuito
+pero no-libre) en 2005, y liberado bajo la GPL en 2007
+\end{itemize}
+\item Agrega a la arquitectura x86 clásica las funciones básicas de HVM,
+sin implementarlas por hardware
+\begin{itemize}
+\item Con una notable penalización en velocidad
+\item Aunque \emph{muchísimo} menor a la de la emulación
+\end{itemize}
+\item Como la mayor parte del código sigue siendo nativo, ofrecen una
+velocidad general muy aceptable
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5e2f88a}]{¿Cómo puedo implementar HVM?}
+\begin{itemize}
+\item Proyectos libres:
+\begin{itemize}
+\item Xen (modo \emph{asistido por hardware})
+\item KVM (sobre Linux)
+\item Logical Domains (sobre Solaris)
+\end{itemize}
+\item Proyectos híbridos libre/propietario
+\begin{itemize}
+\item VirtualBox
+\end{itemize}
+\item Productos propietarios
+\begin{itemize}
+\item VMWare
+\item VirtualPC
+\item HyperV
+\item Parallels
+\end{itemize}
+\item \ldots{}Y seguramente muchos más
+\end{itemize}
+\end{frame}
+
+\section{Paravirtualización}
+\label{sec:orgf0cb503}
+\begin{frame}[label={sec:org1ba0bca}]{Un enfoque más ligero, más accesible}
+\begin{itemize}
+\item Aún si la virtualización asistida ya está disponible en CPUs
+disponibles masivamente, es aún una característica \emph{de lujo}
+\begin{itemize}
+\item Para los rangos superiores del mercado
+\end{itemize}
+\item La \emph{paravirtualización} consiste en reescribir las porciones de un
+sistema operativo que interactúan directamente con el hardware,
+para que soliciten estas operaciones \emph{a sabiendas} a un hipervisor
+\item Es conocida como \emph{virtualización asistida por el sistema operativo}
+(\emph{OS-assisted virtualization})
+\item Formalmente podría verse como un \emph{port} del sistema operativo a una
+nueva arquitectura
+\begin{itemize}
+\item \emph{Muy} parecida a la del sistema anfitrión
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3a34915}]{Paravirtualización y software libre}
+\begin{itemize}
+\item Si bien ofrece un mapeo más directo, mejor rendimiento y más
+estabilidad a los sistemas huésped, requiere modificaciones
+bastante amplias al sistema operativo
+\begin{itemize}
+\item Es prácticamente imposible correr sistemas no-libres
+paravirtualizados
+\end{itemize}
+\item Un sistema operativo tiene que ser \emph{portado} a las abstracciones
+que ofrece cada una de las arquitecturas de paravirtualización
+\item El artículo con el cual se presentó Xen 1.x habla de un port de
+Windows XP, basado en el Academic Licensing Program a su
+paravirtualizador
+\begin{itemize}
+\item Pero no es redistribuible, sólo puede ser utilizado internamente
+en Xensource
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org14712b5}]{Aprovechamiento de recursos (1)}
+\begin{itemize}
+\item Con sistemas paravirtualizados podemos lograr un consumo de recursos
+aún más eficiente que en un sistema virtualizado ``real''
+\item Los dispositivos presentados al OS huésped son mucho más ligeros e
+\emph{idealizados}
+\begin{itemize}
+\item No hace falta emular al hardware real
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgfa0ca70}]{Aprovechamiento de recursos (2)}
+\begin{itemize}
+\item El OS huésped puede pedir al anfitrión recursos adicionales cuando
+los requiere
+\begin{itemize}
+\item Incluso sobre demanda — \emph{balooning}
+\item Incluso recursos que para una computadora normal son inamovibles,
+p.ej. espacio de memoria
+\end{itemize}
+\item Puede haber un monitoreo mucho más completo
+\begin{itemize}
+\item El OS anfitrión no tiene que adivinar tantos detalles del
+funcionamiento del huésped si éste se los confía
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga2c7559},fragile]{CPU virtual, dispositivos paravirtuales}
+ \begin{itemize}
+\item Este punto es empleado por todo tipo de virtualizadores:
+Paravirtualización a nivel dispositivo
+\item Entre más sencillos sean los dispositivos emulados para la
+virtualización, menos sobrecarga por traducir llamadas a hardware
+inexistente
+\item Hasta una interfaz tan simple como NE2K tiene hardware innecesario
+a la hora de virtualizar
+\begin{itemize}
+\item Entre más delgada sea la capa de traducción, mejor rendimiento
+obtenemos
+\end{itemize}
+\item En Linux, las clases de dispositivos \texttt{virtio} y \texttt{pv} llegan a
+ofrecer rendimiento de 5 a 10 veces mejor que la emulación de
+dispositivos reales
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4bcf581}]{Sugerencia bibliográfica}
+\begin{center}
+Los temas presentados en este apartado están descritos muy bien y muy
+a detalle en el artículo \emph{Xen and the Art of Virtualization}
+(\url{http://www.cl.cam.ac.uk/netos/papers/2003-xensosp.pdf}), Paul Barham,
+Boris Dragovic et. al. 2003
+
+La progresión es muy natural y sencilla, ¡vale la pena al menos echarle
+un ojo!
+\end{center}
+\end{frame}
+
+
+
+\begin{frame}[label={sec:orga6c536c}]{¿Cómo puedo implementar paravirtualización pura?}
+\begin{itemize}
+\item La principal arquitectura para esto es Xen
+\item VMWare ofrece un modo de operación basado en la paravirtualización
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org58bba09}]{Xen y KVM: Los dos competidores libres}
+\begin{itemize}
+\item Las dos principales implementaciones libres de virtualización son
+Xen y KVM
+\item Sus ofrecimientos son en buena medida comparables
+\item Hasta \(\approx\) 2010 parecía que KVM terminaría conquistando el
+terreno en que el anfitrión/hipervisor es Linux
+\begin{itemize}
+\item Admitido mucho antes al \emph{kernel oficial}
+\item Xen requirió cambios mucho más profundos
+\end{itemize}
+\item Hoy en día, ambos ofrecen interfaces bastante completas
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgfe5d383},fragile]{Xen: Un hipervisor mínimo}
+ \begin{itemize}
+\item Xen es un hipervisor puro — GRUB llama al núcleo de Xen, y éste
+lanza a un núcleo Linux
+\begin{itemize}
+\item Este núcleo tiene que estar compilado para correr
+\emph{paravirtualizado} a la arquitectura virtual de Xen
+\item Esta primer máquina virtual tendrá \emph{control del hipervisor}
+\item En lenguaje de Xen, es \texttt{Dom0}
+\item Se comunica con Xen a través del demonio \texttt{xend}
+\end{itemize}
+\item Todas las máquinas virtuales adicionales que lancemos son \texttt{DomU}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3ca72f7}]{KVM: El Linux de siempre\ldots{} Mas un módulo raro}
+\begin{itemize}
+\item KVM agrega funciones de hipervisor al núcleo estándar de Linux
+\begin{itemize}
+\item A fin de cuentas, un sistema operativo completo tiene todo lo
+necesario para gestionar recursos entre diferentes procesos en
+ejecución
+\end{itemize}
+\item Hereda / incluye \emph{muy} buena parte de Qemu
+\item Las diferentes máquinas virtuales son sencillamente más procesos
+dentro del árbol de procesos
+\end{itemize}
+\end{frame}
+
+\section{Contenedores}
+\label{sec:orgb9f5bd7}
+
+\begin{frame}[label={sec:orgea8d3cc}]{\ldots{} ¡Cuéntenme ustedes al respecto!}
+\begin{center}
+{\huge ¡Viva! ¡Hurra!} \\ {\Large ¡Ya era hora! ¡Tenemos tarea!}
+\end{center}
+\vfill
+\begin{itemize}
+\item Lean \emph{Notes from a container} (Jonathan Corbet, 2007;
+\url{http://lwn.net/Articles/256389/})
+\item Hagan un \emph{mapa mental} (entregar dibujado/impreso, en papelito
+tradicional)
+\item Para el \emph{martes 27 de agosto}
+\item \emph{Sugerencias}: Leer e incluir conceptos tocados por los comentarios
+y en las ligas
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org72c615d}]{¿Qué es un contenedor?}
+\begin{itemize}
+\item Una manera distinta de virtualizar
+\item Más sutil, menos flexible
+\item Empleando \emph{un mismo núcleo} de sistema operativo
+\begin{itemize}
+\item Empujando la virtualización \emph{una capa} hacia arriba
+\end{itemize}
+\item Con mayores limitantes, pero importantes ventajas
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3ac47fe},fragile]{Herederos de \texttt{chroot}}
+ \begin{itemize}
+\item Los sistemas Unix han ofrecido la llamada al sistema \texttt{chroot} desde
+1982
+\item Bill Joy la introdujo cuando trabajaba en 4.2BSD para probar la
+construcción de nuevas versiones del sistema operativo sin
+modificar el sistema \emph{vivo}
+\item \texttt{chroot} permite \emph{encerrar} a un proceso dentro de un directorio
+\begin{itemize}
+\item Un proceso al que se le aplica \texttt{chroot} no puede ver el sistema de
+archivos fuera del directorio especificado
+\item \ldots{}No sin aplicar algunos trucos
+\end{itemize}
+\item \texttt{chroot} sólo afecta la \emph{visión de la raiz del sistema de
+archivos}
+\begin{itemize}
+\item No es (ni busca ser) un verdadero aislamiento
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6a1d538},fragile]{No lo es\ldots{} ¿Por qué no lo adecuamos?}
+ \begin{itemize}
+\item Los \emph{contenedores} construyen sobre \texttt{chroot}, ampliando el
+aislamiento a otros componentes del sistema
+\item El primer sistema en ofrecer esta facilidad fue FreeBSD, con sus
+\emph{jails}, desde la versión 4.0 (2000)
+\item Están también implementados ahora en Linux (\emph{vserver} desde 2002,
+hoy \emph{lxc}), Solaris 10 en adelante (\emph{Zones}, 2005) y NetBSD/FreeBSD
+(\emph{Sysjail}, utilizando \texttt{systrace}, 2006)
+\item Idea similar en Windows: \emph{Parallels Virtuozzo}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org468a5cd}]{Principios básicos de los contenedores}
+\begin{itemize}
+\item La nomenclatura básica cambia según la implementación
+\begin{itemize}
+\item Cada \emph{servidor virtual} puede llamarse \emph{contenedor}, \emph{contexto de
+seguridad}, etc.
+\end{itemize}
+\item El kernel oculta y aísla la información de cada contexto de los
+demás:
+\begin{itemize}
+\item Tablas de procesos
+\item Señales, IPC
+\item Conexiones, sockets e interfaces de red, reglas de firewall
+\item Dispositivos
+\item Límites en consumo de recursos (RAM, CPU)
+\end{itemize}
+\item Formalmente, los contenedores no implementan \emph{virtualización}, sino
+\emph{restricción}
+\begin{itemize}
+\item Pero brindan al usuario la \emph{ilusión} de una \emph{máquina virtual}
+inexistente
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0e492ad}]{Variedad, pero con un límite}
+\begin{itemize}
+\item A través de los contenedores, la virtualización es \emph{casi} completa
+\item Se ven un poco las \emph{costuras}, pero para propósitos prácticos, cada
+\emph{contenedor} es un sistema independiente
+\begin{itemize}
+\item Excepto por el núcleo
+\end{itemize}
+\item Podemos tener cualquier distribución corriendo dentro de nuestros
+contenedores al mismo tiempo
+\item Única restricción: Todos corren con el mismo núcleo (misma versión,
+mismos módulos, etc.)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9a783f0},fragile]{Consumo de recursos óptimo}
+ \begin{itemize}
+\item Un contexto sin actividad tiene un consumo de recursos mínimo
+\item Los procesos que no tienen actividad no consumen CPU
+\item Los procesos en memoria inactivos van siendo paginados a disco
+\item Queda como excepción \emph{Sysjail} (OpenBSD), una implementación de
+contenedores en espacio de usuario a través de \texttt{systrace}, que \emph{sí}
+es notablemente más lenta que el sistema en hardware nativo
+\end{itemize}
+\end{frame}
+
+
+\section{Conclusión y nuevos conceptos}
+\label{sec:org6efed40}
+\begin{frame}[label={sec:org62e20a2}]{Algunos casos comunes de uso}
+\begin{itemize}
+\item Mejor aprovechamiento / consolidación de recursos
+\item Migraciones
+\item Seguridad
+\item Redundancia / alta disponibilidad
+\item Despliegue de escritorios virtuales
+\item Simplificación de mantenimiento
+\item Desarrollo (especialmente depuración) para sistemas embebidos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgfdfc715}]{Diferentes necesidades, diferentes soluciones}
+\begin{itemize}
+\item Hay una gran riqueza en la oferta de herramientas de virtualización
+\item Cada herramienta y estrategia tiene características muy distintas
+\item Muchas de las ofertas de cómputo \emph{en la nube} cruzan necesariamente
+por virtualización
+\begin{itemize}
+\item Particularmente por hardware, paravirtualización y contenedores
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0fc5808}]{¿Y la nube?}
+\begin{itemize}
+\item La \emph{infraestructura como un servicio}, una de las modalidades del
+\emph{cómputo en la nube} implica necesariamente virtualización
+\item Varios programas de administración de \emph{nubes privadas} gestionan y
+monitorean también sistemas virtualizados
+\item Una \emph{nube} puede verse como un conjunto de servidores configurados
+para brindar recursos reales a máquinas virtuales
+\begin{itemize}
+\item Disco, memoria, tiempo de procesamiento, etc.
+\end{itemize}
+\item La administración de servicios \emph{en la nube}, así como sus ventajas y
+desventajas, salen del ámbito del curso
+\begin{itemize}
+\item Pero sin duda será de interés de varios de ustedes
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgbf97efa}]{En esta presentación vimos\ldots{}}
+\begin{itemize}
+\item Emulación
+\begin{itemize}
+\item Traducción de las instrucciones de una arquitectura diferente
+\item Incluye la emulación de un sistema entero (hardware inexistente)
+\item \emph{Muy} lenta
+\item Diferencia entre \emph{emular} y \emph{simular}
+\item Puede emularse una arquitectura existente o inexistente
+\begin{itemize}
+\item Modelo general del \emph{p-system}, la \emph{Máquina Virtual Java} (JVM),
+\emph{Common Language Infrastructure} (.NET)
+\end{itemize}
+\item Rendimiento — Traducción dinámica, compilación JIT
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3888936}]{En esta presentación vimos\ldots{}}
+\begin{itemize}
+\item Virtualización asistida por hardware (HVM)
+\begin{itemize}
+\item Historia: IBM S/360-67 con CP-67/CMS (hasta hoy con z/VM)
+\item Concepto de \emph{hipervisor}
+\item Entrada de HVM al común de los equipos x86
+\item Estabilidad por virtualización
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1535f4b}]{En esta presentación vimos\ldots{}}
+\begin{itemize}
+\item Paravirtualización
+\begin{itemize}
+\item Enfoque más ligero, aunque requiere reescribir porciones de los
+sistemas operativos huésped
+\item Un SO paravirtualizado puede lograr mejor uso de recursos que el
+mismo OS en hardware real
+\begin{itemize}
+\item El hardware \emph{idealizado} es más fácil de manejar
+\item El sistema anfitrión no tiene que desperdiciar proveyendo
+recursos no empleados por los huéspedes
+\end{itemize}
+\item Hardware virtualizado, dispositivos paravirtualizados
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb3ce68f},fragile]{En esta presentación vimos\ldots{}}
+ \begin{itemize}
+\item Contenedores
+\begin{itemize}
+\item Manera más \emph{sutil}, menos flexible de virtualización
+\item Un mismo sistema operativo (un mismo núcleo); un sistema maestro,
+varios \emph{contenedores} con sistemas completos dentro
+\item Construyendo sobre \texttt{chroot}
+\item El núcleo separa varias estructuras presentando vistas separadas a
+los distintos sistemas huésped
+\item Formalmente, más que virtualización implementan \emph{restricción}
+\item Consumo de recursos mínimo
+\end{itemize}
+\end{itemize}
+\end{frame}
+\end{document}

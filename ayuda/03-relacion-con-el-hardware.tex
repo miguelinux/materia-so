@@ -1,0 +1,1056 @@
+% Created 2023-02-06 Mon 12:03
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Relación con el hardware: Estructuras y funciones básicas}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Relación con el hardware: Estructuras y funciones básicas},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Estructuras básicas}
+\label{sec:org5fe86b1}
+\begin{frame}[label={sec:orgb014415}]{Separación \emph{espacio núcleo} y \emph{espacio usuario}}
+\begin{itemize}
+\item Evolución de los tipos de \emph{modo protegido} de los sistemas monitores
+\begin{itemize}
+\item ¿Dos modos? ¿Más modos?
+\end{itemize}
+\item Código con diferentes roles
+\begin{itemize}
+\item Lo que hace el sistema operativo vs. las aplicaciones del usuario
+\end{itemize}
+\item ¿Cómo se \emph{salta} entre un modo y otro?
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgd4df4be}]{Organización del sistema operativo}
+\begin{center}
+¿Hasta dónde llega el sistema operativo?
+
+¿Hasta dónde llega el código que corre en modo protegido/espacio
+núcleo?
+\end{center}
+\begin{description}
+\item[{Monolítico}] Todas las operaciones privilegiadas en el mismo
+\emph{super-proceso}.
+\item[{Microkernel}] Un núcleo con el mínimo posible de funcionalidad,
+descargando en \emph{procesos especiales} ciertas tareas
+\item[{Híbridos}] Sistemas que entran mayormente en una categoría, pero
+tienen alguna excepción
+\end{description}
+\end{frame}
+\begin{frame}[label={sec:orge89badb}]{Monolíticos}
+\begin{itemize}
+\item La mayor parte de los sistemas históricamente
+
+\item Más fáciles de diseñar
+\begin{itemize}
+\item (¡No es lo mismo que \emph{diseño más simple}!)
+\end{itemize}
+
+\item Estructuras compartidas directamente entre subsistemas
+
+\item Más rápidos (menos \emph{cambios de contexto})
+
+\item Difícil transición a un entorno multiprocesador
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org44b5574}]{Monolíticos: Esquematizando}
+\begin{center}
+\includegraphics[height=0.7\textheight]{../img/dot/diseno_monolitico.png}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org16f7bd6}]{Microkernel}
+\begin{itemize}
+\item Se delegan a \emph{espacio usuario} todos los procesos que sea posible
+\begin{itemize}
+\item p.ej. sistemas de archivos, planificación de procesos,
+administración de memoria, dispositivos, modelo de seguridad…
+\end{itemize}
+
+\item Código resultante \emph{más limpio}
+\begin{itemize}
+\item Interfaces claras, separación de responsabilidades
+\item Seguridad: Verificabilidad, \emph{auto-reparación}
+\item Más fácil pasar a multiprocesador
+\end{itemize}
+
+\item Más lentos
+\begin{itemize}
+\item Típicamente basados en \emph{paso de mensajes}
+\item Requieren más cambios de contexto
+\end{itemize}
+
+\item Más difíciles de implementar correctamente
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org09cc85a}]{Microkernel: Esquematizando}
+\begin{center}
+\includegraphics[height=0.7\textheight]{../img/dot/diseno_microkernel.png}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgafb91ba}]{Diseño híbrido}
+\begin{itemize}
+\item Hay componentes que pueden migrarse limpiamente de un esquema
+monolítico a uno microkernel
+\item Pero hay componentes para los cuales dicha tarea resulta muy cara
+\begin{itemize}
+\item Incluso en sistemas diseñados originalmente como microkernel
+\end{itemize}
+\item Hoy en día encontraremos concepciones híbridas, con características
+de ambos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf702707}]{Diseño híbrido: Esquematizando}
+\begin{center}
+\includegraphics[height=0.7\textheight]{../img/dot/diseno_hibrido.png}
+\end{center}
+\end{frame}
+
+\section{Fronteras del CPU}
+\label{sec:org7db62ed}
+\begin{frame}[label={sec:orgcff6e65}]{¿Qué es un \emph{sistema von Neumann}?}
+\begin{itemize}
+\item Computadora \emph{de programa almacenado}
+\begin{itemize}
+\item En la \emph{memoria principal}
+\item \emph{Mismo almacenamiento} para el programa siendo ejecutado que para
+sus datos
+\end{itemize}
+\item Todas las computadoras que empleamos hoy en día son, para fines
+prácticos, sistemas von Neumann\footnote{Aunque podrían caracterizarse
+como \emph{Harvard modificadas} partiendo desde un formalismo
+excesivo\ldots{}}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4f48b5a}]{Implicaciones de \emph{von Neumann}}
+\begin{itemize}
+\item La arquitectura \emph{no considera} la existencia de almacenamiento \emph{persistente}
+\begin{itemize}
+\item Dentro del procesador hay algunas (¡pocas!) localidaes para
+almacenar datos \emph{muy limitados}, para \emph{trabajar directamente con
+ellos} \rarrow \emph{Registros}
+\item La computadora cuenta únicamente con la \emph{memoria de trabajo}
+\rarrow RAM, \emph{almacenamiento primario}
+\item El almacenamiento a largo plazo debe hacerse empleando
+controladores / mecanismos alternos, en medios específicos \rarrow
+\emph{almacenamiento secundario}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5c079a9}]{Los registros}
+\begin{center}
+¿Qué son los registros?
+\end{center}
+\begin{itemize}
+\item Memoria super-rápida (hoy en día, sub-nanosegundo), ubicada \emph{dentro}
+del procesador
+\item Manejada \emph{por referencia directa}, no por dirección
+\item Además de los datos del proceso guardan su \emph{estado}
+\item ¿Qué significa \emph{gestionados por el compilador}?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3a9cfdf}]{Procesadores basados en \emph{acumuladores}}
+\begin{itemize}
+\item Primeros procesadores: Uno o pocos \emph{acumuladores}. Por ejemplo:
+\begin{itemize}
+\item MOS 6502:
+\begin{itemize}
+\item 1 acumulador (A) de 8 bits
+\item 2 registros índice de 8 bits (X y Y)
+\item 1 registro de estado del procesador (P), un apuntador al stack
+de 8 bits (S), un apuntador a instrucciones (PC) de 8 bits
+\end{itemize}
+\item Zilog Z80 e Intel 8086:
+\begin{itemize}
+\item 14 registros (3 de 8 bits, el resto de 16)
+\item Pero sólo uno era un acumulador de propósito general
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org30d16e1}]{Ejemplo de acumuladores: Intel 8086/8088}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{../img/registros_8086.png}
+\caption{Imagen de Wikipedia}
+\end{figure}
+\end{column}\begin{column}{0.5\textwidth}
+Registros \emph{bandera} (vector de booleanos): Overflow, Dirección,
+Interrupción, Trampa/depuración, Signo, Cero, Acarreo auxiliar,
+Paridad, Acarreo
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:orge097357}]{Registros de \emph{propósito general}: Legado de RISC}
+\begin{itemize}
+\item Procesadores RISC: A partir de los 1980
+\item Planteamiento base de instrucciones \emph{sencillas y regulares}
+\begin{itemize}
+\item Fáciles de codificar en un procesador pequeño (en número de
+transistores)
+\item La arquitectura RISC más conocida hoy: ARM
+\end{itemize}
+\item Típicamente \(\ge 32\) registros \emph{largos} (32, 64bits) de propósito
+general
+\begin{itemize}
+\item Mas algunos de propósito específico
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org844212c}]{Tipos de almacenamiento}
+\begin{center}
+¿Cómo representar y guardar \emph{adecuadamente} los datos e instrucciones?
+\end{center}
+\begin{itemize}
+\item La memoria rápida es muy cara
+\begin{itemize}
+\item Pero aún así, mucho más lenta que el procesador: \emph{Cuello de
+botella de von Neumann} (\href{https://dl.acm.org/citation.cfm?doid=359576.359579}{Backus, 1977})
+\end{itemize}
+\item La memoria barata es muy lenta (\emph{hasta 1000 veces} más lenta que el procesador)
+\item El almacenamiento \emph{a largo plazo} es mucho más barato, pero
+muchísimo más lento
+\begin{itemize}
+\item Los discos llegan a ser \emph{miles a millones} de veces más lentos que
+la memoria
+\end{itemize}
+\item El avance en hardware \emph{juega en contra} de reducir la diferencia
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgec6457c}]{La memoria}
+\begin{itemize}
+\item El procesador puede referirse directamente a los datos ubicados en
+la \emph{memoria principal} (\emph{almacenamiento primario})
+\begin{itemize}
+\item Indicando su dirección (varias notaciones/mecanismos posibles)
+\item Algunos procesadores permiten \emph{realizar operaciones} directamente
+sobre la memoria
+\begin{itemize}
+\item Mayormente los basados en acumulador
+\end{itemize}
+\end{itemize}
+\item Memoria \emph{caché}
+\begin{itemize}
+\item Acelera operaciones aprovechando la \emph{localidad de referencia}
+\item Transparente a la programación (gestionada por el controlador)
+\item Varios niveles de caché
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgce179d4}]{Jerarquía de almacenamiento}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/dot/jerarquia_memoria.png}
+\caption{Diferentes niveles de almacenamiento: Diferencias en costo, velocidad y capacidad}
+\end{figure}
+\end{frame}
+\begin{frame}[label={sec:orga87dd69}]{¿Tiempo de acceso? ¿Tasa de transferencia?}
+\begin{center}
+Manejaremos muchas mediciones de velocidad. Debemos siempre tener en cuenta:
+\end{center}
+\begin{description}
+\item[{Tiempo de acceso}] ¿Cuánto tiempo toma \emph{iniciar} una
+transferencia? (medido en s, ms, ns). También llamado \emph{latencia}.
+\item[{Tasa de transferencia}] Una vez iniciada, ¿a qué velocidad
+\emph{sostenida} podemos mantenerla? (medido en b/s, Kb/s, Mb/s)
+\end{description}
+\begin{center}
+En el \emph{mejor caso}, la transferencia de \(x\) bits nos tomará \(t_a +
+xt_t\)
+\end{center}
+\end{frame}
+\begin{frame}[label={sec:orge16bcdd}]{Jerarquía de almacenamiento}
+\begin{center}
+{\scriptsize
+\begin{table}[htbp]
+\caption{Velocidad y gestor de los principales niveles de memoria. (Silberschatz, Galvin, Gagne; p.28)}
+\centering
+\begin{tabular}{lllll}
+Nivel & 1 & 2 & 3 & 4\\
+\hline
+\alert{Nombre} & Registros & Cache & Memoria princ. & Disco\\
+\alert{Tamaño} & <1KB & <16MB & <64GB & >100GB\\
+\alert{Tecnología} & Multipuerto, CMOS & SRAM CMOS & CMOS DRAM & Magnética\\
+\alert{Acceso (ns)} & 0.25-0.5 & 0.5-25 & 80-250 & 5,000,000\\
+\alert{Transf (MB/s)} & 20,000-100,000 & 5,000-10,000 & 1,000-5,000 & 20-150\\
+\alert{Administra} & Compilador & Hardware & Sist. Op. & Sist. Op.\\
+\alert{Respaldado en} & Cache & Memoria princ. & Disco & CD o cinta\\
+\end{tabular}
+\end{table}
+}
+\end{center}
+\end{frame}
+\begin{frame}[label={sec:orge62f12c}]{Almacenamiento \emph{primario} y \emph{secundario}}
+\begin{itemize}
+\item El procesador \emph{sólo puede manejar directamente} a la memoria
+principal
+\begin{itemize}
+\item Se le conoce también como \emph{almacenamiento primario}
+\item Sólo éste es parte de lo que la arquitectura von Neumann llama
+\emph{computadora}
+\end{itemize}
+\item Discos, cintas, almacenamiento \emph{estado sólido} son \emph{almacenamiento
+secundario}
+\begin{itemize}
+\item Todas las computadoras lo manejan a través de \emph{controladores}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Conectando hacia afuera}
+\label{sec:org417b513}
+\begin{frame}[label={sec:org7a6af19}]{Canales y puentes}
+\begin{itemize}
+\item Los componentes \emph{no directamente referenciables} de un sistema se
+comunican a través de \emph{canales} (\emph{buses})
+\begin{itemize}
+\item Líneas de comunicación entre el procesador y el \emph{chipset}
+\end{itemize}
+\item Acomodo \emph{muy frecuente} en sistemas x86 recientes\footnote{Después del
+2010, las funciones del \emph{Northbridge} han tendido a ser absorbidas
+por el CPU mismo}:
+\begin{description}
+\item[{Puente norte (Northbridge)}] Conectado directamente al CPU,
+encargado de los buses de alta velocidad y los dispositivos
+fundamentales para el inicio del sistema — Memoria, video (AGP)
+\item[{Puente sur (Southbridge)}] Controla el resto de los dispositivos
+del sistema; de él se desprenden varios buses (SCSI / SATA /
+IDE, PCI / PCIe, USB / Firewire, puertos \emph{heredados})
+\end{description}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb3c6d9a}]{Canales y puentes}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=\textheight, angle=90]{../img/northbridge_southbridge.png}
+\caption{Diagrama de la comuniacación entre componentes de un sistema de cómputo basado en \emph{puente norte} y \emph{puente sur}}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org17ec955}]{¿Por qué tantos canales?}
+\begin{itemize}
+\item Frecuencia acorde a distintas categorías de dispositivos
+\begin{itemize}
+\item Criterio económico: Más barato usar señalización más lenta
+\item Distintos mecanismos de acceso
+\end{itemize}
+\item Permitir transferencias paralelas, agregarlas conforme subimos la
+jerarquía
+\begin{itemize}
+\item Jerarquizar la comunicación
+\end{itemize}
+\item Pero\ldots{} Cuando el sistema requiere transferir datos de o hacia
+dispositivos pasando por el mismo bus, frecuentemente ocurre
+\alert{contención}
+\begin{itemize}
+\item Algunos canales, como el USB, permiten \emph{hasta 127} dispositivos
+conectados \emph{serialmente}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org92e04db}]{Ejemplo: Chipset Intel 875 (2003)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/dot/chipset_857.png}
+\caption{Diagrama de la comuniacación entre componentes de un sistema de cómputo basado en el chipset Intel 875 (Pentium 4, 2003)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org0ba141a}]{Otros arreglos}
+\begin{itemize}
+\item El ejemplo presentado es para un sistema de escritorio típico
+\begin{itemize}
+\item Y bastante viejo ya
+\end{itemize}
+\item En entornos de alto rendimiento, puede haber múltiples canales entre
+los componentes
+\begin{itemize}
+\item Para reducir el impacto de la contención
+\item Particularmente en los componentes con mayor demanda de ancho de banda
+\end{itemize}
+\item En entornos móviles / de bajo costo, se hacen \emph{concesiones}
+permitiendo mayor contención
+\begin{itemize}
+\item P.ej. estructurar la comunicación a todos los periféricos
+alrededor del bus USB
+\item Frecuente en equipos ARM
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org396aa8e}]{Ejemplo: Raspberry Pi}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/raspberry_block_diag.png}
+\caption{Diagrama de bloques de la popular plataforma ARM \emph{Raspberry Pi} de primera generación (Imagen de Wikipedia)}
+\end{figure}
+\end{frame}
+
+\section{Interrupciones y excepciones}
+\label{sec:org237c592}
+
+\begin{frame}[label={sec:orgaa4666b}]{El procesador y los \emph{eventos} externos}
+\begin{itemize}
+\item El procesador no tiene cómo reaccionar \emph{internamente} a eventos que
+ocurran en el sistema
+\item La ejecución es lineal: Avanza por la lista de instrucciones del
+programa
+\item Lo que permite el manejo de toda la E/S, interactividad,
+multiprogramación es el mecanismo de \emph{interrupciones} y
+\emph{excepciones}.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org18dbfca}]{Interrupciones y excepciones}
+\begin{description}
+\item[{Interrupción}] Todo evento recibido por el sistema, de origen
+\emph{externo} al flujo de la ejecución
+\begin{itemize}
+\item Actividad en la red
+\item Teclado o mouse
+\item Alarma del temporizador
+\item Datos del disco listos
+\end{itemize}
+
+\item[{Excepción}] Eventos inesperados originados por el flujo del
+proceso
+\begin{itemize}
+\item División sobre cero
+\item Instrucción ilegal
+\item Acceso a memoria no direccionada
+\item También conocidas como \emph{trampas} (\emph{traps})
+\end{itemize}
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org76585a9}]{Manejo de interrupciones y excepciones}
+\begin{itemize}
+\item Todo \emph{evento} es recibido por el sistema operativo (no por los
+procesos)
+\item Cuando ocurre cualquier \emph{evento}, el hardware \emph{lanza una
+interrupción} que interrumpe el flujo de ejecución
+\item Rutina de \emph{manejo de interrupciones}
+\begin{itemize}
+\item Grabar estado del proceso desplazado y \emph{cambiar contexto}
+\item Atender la interrupción en \emph{modo privilegiado} (¡el menor tiempo
+posible!)
+\item Una vez procesada, volver a invocar al \emph{planificador}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1e1d46f}]{¿Cuándo una interrupción es \emph{no enmascarable}?}
+\begin{itemize}
+\item Depende de la arquitectura y los objetivos del sistema
+\item Algunos ejemplos:
+\begin{itemize}
+\item Error de paridad en la memoria (IBM PC)
+\item Llamadas a hardware incompatible (primeros \emph{clones} de IBM;
+llamada atrapada y procesada por el manejador de interrupciones en
+el BIOS)
+\item Diversas combinaciones de teclas para invocar a un reinicio (o
+lanzar un depurador)
+\item Consolas de 8 bits (Nintendo NES): Bloquear modificaciones al
+buffer de pantalla durante el refresco vertical
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga887186}]{Llamadas al sistema}
+\begin{itemize}
+\item De cierto modo análogas/complementarias a las interrupciones
+\item Mecanismo para que un proceso \emph{solicite un servicio} al sistema
+operativo
+\item Cada sistema operativo \emph{expone} un diferente juego de llamadas al
+sistema a través de su API
+\item Es en buena medida lo que determina la \emph{compatibilidad de código}
+entre sistemas operativos
+\begin{itemize}
+\item Contraposición: Compatibilidad binaria
+\item APIs implementados por diversos sistemas: POSIX, Win32
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6e2c38f}]{Flujo de control en una llamada al sistema}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/dot/llamada_al_sistema.png}
+\caption{Transición del flujo entre espacio usuario y espacio núcleo en una llamada al sistema}
+\end{figure}
+\end{frame}
+\begin{frame}[label={sec:org57e6d6b}]{Tipos de llamadas al sistema (1)}
+\begin{center}
+Lista incompleta, meramente ejemplificando
+\end{center}
+\begin{description}
+\item[{Control de procesos}] Crear o finalizar un proceso, obtener
+atributos del proceso, esperar cierto tiempo, asignar o liberar
+memoria, etc.
+
+\item[{Manipulación de archivos}] Crear, borrar o renombrar un archivo;
+abrir o cerrar un archivo existente; modificar sus \emph{metadatos};
+leer o escribir de un \emph{descriptor de archivo} abierto, etc.
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:orga68e7e7}]{Tipos de llamadas al sistema (2)}
+\begin{center}
+Lista incompleta, meramente ejemplificando
+\end{center}
+\begin{description}
+\item[{Manipulación de dispositivos}] Solicitar o liberar un dispositivo;
+leer, escribir o reposicionarlo, y otras varias. Muchas de estas
+llamadas son análogas a las de manipulación de archivos, y varios
+sistemas operativos las ofrecen como una sola.
+\item[{Mantenimiento de la información}] Obtener o modificar la hora del
+sistema; obtener detalles acerca de procesos o archivos, etc.
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org8e93a05}]{Tipos de llamadas al sistema (3)}
+\begin{center}
+Lista incompleta, meramente ejemplificando
+\end{center}
+\begin{description}
+\item[{Comunicaciones}] Establecer una comunicación con determinado
+proceso (local o remoto), aceptar una solicitud de
+comunicación de otro proceso, intercambiar
+información sobre un canal establecido
+
+\item[{Protección}] Consultar o modificar la información relativa al
+acceso de objetos en el disco, otros procesos, o la
+misma sesión de usuario
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org9bb839f},fragile]{Depuración por \emph{trazas}}
+ \begin{itemize}
+\item La mayor parte de los sistemas operativos ofrecen programas que
+ayudan a \emph{depurar la ejecución} de otros programas
+\item Pueden \emph{envolver} al API del sistema, y permitir seguir la \emph{traza}
+(\emph{trace}) de la ejecución de un proceso
+\item Por ejemplo:
+\begin{itemize}
+\item \texttt{strace} en Linux
+\item \texttt{truss} en Unixes históricos
+\item \texttt{ktrace}, \texttt{kdump} en *BSD
+\item \texttt{dtrace} en Solaris \(\ge 10\) (2005)
+\end{itemize}
+\item Permite entender \emph{buena parte} de lo que realiza un proceso —
+Prácticamente, toda su interacción con el sistema
+\begin{itemize}
+\item A veces, demasiada información
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org63a7284},fragile]{Ejemplo: \texttt{\$ strace pwd}}
+ \begin{verbatim}
+execve("/bin/pwd", ["pwd"], [/* 43 vars */]) = 0
+brk(0)                                  = 0x8414000
+access("/etc/ld.so.nohwcap", F_OK)      = -1 ENOENT (No such file or directory)
+mmap2(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb773d000
+	     (...)
+getcwd("/home/gwolf/vcs/sistemas_operativos", 4096) = 36
+fstat64(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(136, 1), ...}) = 0
+mmap2(NULL, 4096, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0xb773c000
+write(1, "/home/gwolf/vcs/sistemas_operati"..., 36/home/gwolf/vcs/sistemas_operativos
+) = 36
+close(1)                                = 0
+munmap(0xb773c000, 4096)                = 0
+close(2)                                = 0
+exit_group(0)                           = ?
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org76e8d3e}]{Acceso directo a memoria (DMA)}
+\begin{center}
+Problema: En la sección de un proceso en que está \emph{limitado por
+entrada-salida}, la transferencia de información se vuelve cuello de
+botella
+\end{center}
+\begin{itemize}
+\item Modo \emph{entrada/salida programada}
+\item Gran cantidad y frecuencia de interrupciones
+\item Imposible realizar trabajo real
+\end{itemize}
+\begin{center}
+Respuesta: \emph{Acceso Directo a Memoria}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org7b2f344}]{Acceso directo a memoria (DMA)}
+\begin{itemize}
+\item Orientado a dispositivos de gran ancho de banda
+\begin{itemize}
+\item Unidades de disco
+\item Multimedia
+\item Red
+\item Memoria y caché
+\end{itemize}
+\item Transferencia en bloques, empleando un \emph{controlador}
+\begin{itemize}
+\item Dirección física base de memoria
+\item Cantidad de datos a transferir
+\item \emph{Puerto} del dispositivo
+\item Dirección de la transferencia (\emph{desde} o \emph{hacia} memoria)
+\end{itemize}
+\item Limitante: Contención en el bus de memoria
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1b3e29a}]{Coherencia de caché}
+\begin{center}
+¿Qué problema puede causar una transferencia \emph{no iniciada por el
+procesador}? (O por \emph{otros procesadores})
+\end{center}
+\pause
+\begin{itemize}
+\item Incongruencia entre la memoria real y \emph{páginas} de caché existentes
+\begin{description}
+\item[{Caché coherente}] Mecanismos \emph{en hardware} que notifican a los
+controladores de caché que las páginas están \emph{sucias}
+\item[{No coherente}] El sistema operativo debe realizar esta operación
+\end{description}
+\item Sistemas híbridos en lo relativo a la coherencia
+\begin{itemize}
+\item Caché de nivel superior (en el procesador) no coherente, cachés
+inferiores coherentes
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Multiprocesamiento}
+\label{sec:orgabd4947}
+\begin{frame}[label={sec:org3bd5cd8}]{Multiprocesamiento y multiprogramación}
+\begin{center}
+Conceptos relacionados, empleados coloquialmente de forma
+intercambiable, pero muy distintos:
+\end{center}
+\begin{description}
+\item[{Multiprogramación}] \emph{Ilusión} de estar ejecutando varios procesos
+al mismo tiempo, por medio de la \emph{alternación rápidamente} entre
+ellos
+\begin{itemize}
+\item En un principio, no tan rápidamente; hoy en día, cientos a
+miles de veces por segundo
+\end{itemize}
+\item[{Multiprocesamiento}] Entorno donde hay más de un procesador central
+(CPU).
+\begin{itemize}
+\item Por muchos años, reservado a usos muy especializados
+\item Hoy en día, la norma.
+\end{itemize}
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org132e663}]{Multiprogramación, multiprocesamiento, híbrido\ldots{}}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.5\textheight]{../img/ditaa/multiproceso_y_multiprogramacion.png}
+\caption{Esquema de la ejecución de tres procesos en un sistema secuencial, multiprogramado, multiprocesado, e híbrido}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org3a3e112}]{Formalizando un poco}
+\begin{itemize}
+\item \emph{Sólamente} un sistema multiprocesador tiene la capacidad \emph{real} de
+atender \emph{simultáneamente} a diversos procesos
+\item Hoy en día es muy raro aplicar \emph{de forma exclusiva} a cualquiera de
+estas modalidades
+\begin{itemize}
+\item Multiprogramado puro: Sigue siendo común en equipos
+no-multiprocesados
+\item \ldots{}Pero cada vez son menos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge6e858b}]{Acostumbrémonos, porque\ldots{}}
+\begin{center}
+El tema que más recurrentemente abordaremos en el curso es \emph{la
+complejidad} que proviene tanto de la multiprogramación como de la
+multitarea
+
+Particularmente la abordaremos en las dos siguientes unidades:
+\emph{Administración de procesos} y \emph{Planificación de procesos}.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org0b46568}]{La irrupción del multiprocesamiento}
+\begin{itemize}
+\item Existe desde los 1960
+\item Entornos de alto rendimiento, \emph{muy especializados}
+\begin{itemize}
+\item Requieren una programación hecha \emph{con cuidado especial}
+\end{itemize}
+\item Hace apenas 10-15 años, muchos sistemas operativos no detectaban
+siquiera más de un procesador
+\begin{itemize}
+\item Incluso de rango servidor
+\item Era muy raro encontrarlos en hardware de uso frecuente
+\end{itemize}
+\item Pero hacia el 2005\ldots{} Nos alcanzó Gordon E. Moore
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2a73e8e}]{¿Gordon E. Moore?}
+\begin{itemize}
+\item Ingeniero electrónico, fundador de \emph{Fairchild Semiconductor}
+\item Publicó en 1965 \emph{\href{http://cs.utexas.edu/\~fussell/courses/cs352h/papers/moore.pdf}{Cramming more components onto integrated circuits}}
+(\emph{Apretujando más componentes en circuitos integrados})
+\item Observando el desarrollo desde 1959, predice que cada año se
+duplicará la cantidad de transistores en los circuitos integrados,
+al menos por los próximos 10 años
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgbe4cfe1}]{La Ley de Moore, 1965}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/moore_orig.png}
+\caption{La \emph{Ley de Moore}, en su artículo publicado en 1965, prediciendo la miniaturización por diez años}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org355ff15}]{La Ley de Moore, hoy}
+\begin{columns}\begin{column}{0.7\textwidth}
+\begin{center}
+\includegraphics[height=0.9\textheight]{../img/gnuplot/ley_de_moore.png}
+\end{center}
+\end{column}\begin{column}{0.3\textwidth}
+\begin{center}
+Y a cinco decadas, la Ley de Moore se sigue cumpliendo\ldots{}
+\end{center}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org56ebf15}]{¿Moore y el multiprocesamiento?}
+\begin{center}
+¿Qué tiene que ver la Ley de Moore y el multiprocesamiento?
+\end{center}
+\begin{itemize}
+\item Hasta \(\approx 2005\), la velocidad de los CPUs crecía constantemente
+\begin{itemize}
+\item En el ámbito comercial, excediendo los 3 GHz
+\item Llevando a problemas serios de calentamiento
+\end{itemize}
+\item El diferencial de velocidad con el acceso a memoria crece cada vez
+más
+\item Hace falta un cambio de estrategia\ldots{}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc5d7096}]{Chips multiprocesador}
+\begin{itemize}
+\item Los principales fabricantes de CPUs comenzaron a diseñar chips
+conteniendo más de un \emph{núcleo} — Esto es, más de un CPU independiente
+\begin{itemize}
+\item (Y algunas facilidades adicionales — Por ejemplo, mucho mayor
+caché \emph{dentro del mismo} chip)
+\end{itemize}
+\item El reloj de los procesadores no sólo no ha crecido, sino que en
+general \emph{se ha reducido} a cerca de 1GHz
+\begin{itemize}
+\item Obviamente, el rendimiento y la densificación siguen avanzando
+\end{itemize}
+\item Pero ahora la ganancia de velocidad ya no llega en automático con el
+nuevo hardware
+\begin{itemize}
+\item El sistema operativo tiene que saber \emph{aprovechar} al
+multiprocesamiento
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org87505b3}]{¿Cómo multiprocesamos?}
+\begin{center}
+Hoy en día, cuando hablamos de multiprocesamiento, \emph{casi} siempre
+hablamos de multiprocesamiento simétrico
+\vfill
+
+\ldots{}Pero no es el único tipo de multiprocesamiento que hay
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org0412d72}]{Multiprocesamiento simétrico (SMP)}
+\begin{itemize}
+\item Todos los procesadores \emph{son iguales}
+\item Pueden realizar las mismas operaciones en el mismo tiempo
+\item Un proceso podría \emph{migrarse} de un procesador a otro de forma
+transparente
+\begin{itemize}
+\item Únicamente manteniendo información básica
+\end{itemize}
+\item Tienen \emph{acceso a la misma memoria}
+\begin{itemize}
+\item Aunque cada uno puede tener su propio caché) \rarrow
+\alert{¡Necesidad de coherencia!}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9066f79}]{Multiprocesamiento asimétrico}
+\begin{center}
+Puede haber varios puntos de asimetría:
+\end{center}
+\begin{itemize}
+\item Distinta \emph{arquitectrura} \rarrow Típicamente algunos se dedicarán a una
+tarea específica
+\item Coprocesadores, o procesadores coadyuvantes
+\begin{itemize}
+\item Caso de las tarjetas gráficas (GPUs)
+\item Podrían verse \emph{casi} como una red alta velocidad de computadoras
+\emph{independientes}
+\end{itemize}
+\item Memoria y responsabilidades muy distintas a las del sistema central
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org64e0a65}]{Acceso no-uniforme a memoria (NUMA)}
+\begin{center}
+(\emph{Non-Uniform Memory Access})
+\end{center}
+\begin{itemize}
+\item Procesadores de la misma arquitectura/tipo
+\begin{itemize}
+\item Podrían formar parte de un sistema SMP
+\end{itemize}
+\item Pero con \emph{afinidad} a bancos específicos de memoria
+\begin{itemize}
+\item Memoria \emph{cercana} o \emph{lejana}
+\item Al \emph{planificar} los procesos, se destinan los procesadores cercanos
+\item Hay un \emph{canal compartido} de memoria
+\end{itemize}
+\item Típicamente computadoras grandes con \emph{nodos} o \emph{blades}
+\item Pueden ubicarse como en un punto medio entre SMP y el \emph{cómputo
+distribuído}
+\begin{itemize}
+\item Cómputo distribuído fuertemente acoplado
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org27a3ea3}]{Más allá: Cómputo distribuído}
+\begin{itemize}
+\item Distribuir un proceso de cómputo para ser realizado \emph{entre
+computadoras independientes}
+\begin{itemize}
+\item Más formalmente: Entre procesadores \emph{que no comparten memoria}
+(almacenamiento primario)
+\end{itemize}
+\item Dos modalidades principales (mas un \emph{adosado}):
+\begin{itemize}
+\item Cúmulos (\emph{clusters})
+\item Mallas (\emph{grids})
+\item Cómputo \emph{en la nube}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgea4f4d6}]{Cúmulos (clusters)}
+\begin{itemize}
+\item Computadoras conectadas por una red local de alta velocidad
+\item Cada una corre su propia instancia de sistema operativo y programas
+\item Principales orientaciones:
+\begin{description}
+\item[{Alto rendimiento}] Cómputo matemático, cálculos\ldots{}
+\item[{Alta disponibilidad}] Prestación de servicios críticos
+\item[{Balanceo de cargas}] Atención a solicitudes complejas, que pueden
+saturar a servidores individuales
+\end{description}
+\item Típicamente son equipos homogéneos y dedicados
+\item Muy comunes en universidades; bajo costo, altas prestaciones
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org55ae72a}]{Mallas (grids)}
+\begin{itemize}
+\item Computadoras distribuidas geográficamente
+\item Conectadas sobre Internet (o redes de área amplia)
+\item Pueden ser heterogéneas (en capacidades y en arquitectura)
+\item Presentan \emph{elasticidad} para permitir conexiones/desconexiones de
+nodos en el tiempo de vida de un cálculo
+\end{itemize}
+\pause
+\begin{center}
+¿Quién quiere presentar el ejemplo de alguna malla?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org1b13b0c}]{Cómputo en la nube}
+\begin{itemize}
+\item Caso específico y \emph{de moda}
+\item Partición de recursos (\emph{cliente-servidor})
+\item Orientado a la \emph{tercerización} de servicios específicos
+\item La \emph{implementación} de un servicio deja de ser relevante \rarrow
+Procesos \emph{opacos}
+\item Conceptos relacionados:
+\begin{itemize}
+\item \emph{Servicios Web}
+\item Plataforma como servicio (\emph{PaaS})
+\item Software como servicio (\emph{SaaS})
+\item Infraestructura como servicio (\emph{IaaS})
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb6b620d}]{Límites del paralelismo}
+\begin{itemize}
+\item \href{http://turing.eas.asu.edu/cse520fa08/Alaw.pdf}{Gene Amdahl (1967)} observó que la ganancia derivada de paralelizar
+el código llega a un límite natural: El tiempo requerido por la
+\emph{porción secuencial} del código
+\item La \emph{porción paralelizable} puede repartirse entre varios
+procesadores, pero siemprehay una importante proporción no
+paralelizable
+\begin{itemize}
+\item Inicialización
+\item Puntos de control/acumulación de datos
+\item Interacción con el usuario
+\item etc.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org53e2ce3}]{Ley de Amdahl}
+\begin{description}
+\item[{\(T(1)\)}] Tiempo de ejecución del programa con un sólo procesador
+\item[{\(T(P)\)}] Tiempo de ejecución con \(P\) procesadores
+\item[{\(t_s\)}] Tiempo requerido por la porción secuencial
+\item[{\(t_p(P)\)}] Tiempo requerido para la porción paralela entre \(P\)
+procesadores
+\end{description}
+\begin{center}
+\(g=\frac{T(1)}{T(P)}=\frac{t_s+t_p(1)}{t_s+\frac{t_p(1)}{P}}\)
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org966c184}]{Ilustrando la ley de Amdahl (1)}
+\begin{latex}
+\begin{columns}
+\begin{column}{0.3\textwidth}
+  \centering
+  \includegraphics[height=0.33\textheight]{../img/dot/amdahl_1.png} \\
+  Procesadores: 1, $t=500$
+\end{column}
+\begin{column}{0.3\textwidth}
+  \centering
+  \includegraphics[height=0.33\textheight]{../img/dot/amdahl_2.png} \\
+  Procesadores: 2, $t=400$, ganancia: 1.25x
+\end{column}
+\begin{column}{0.3\textwidth}
+  \centering
+  \includegraphics[height=0.33\textheight]{../img/dot/amdahl_4.png} \\
+  Procesadores: 4, $t=350$, ganancia: 1.4x
+\end{column}
+\end{columns}
+\end{latex}
+\begin{center}
+Ley de Amdahl: ejecución de un programa con 500 unidades de tiempo total de trabajo con uno, dos y cuatro procesadores.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgfce9c87}]{Ilustrando la ley de Amdahl (2)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\textwidth]{../img/gnuplot/amdahl.png}
+\caption{\label{fig:org5236a4a}Ganancia máxima al paralelizar un programa, según la Ley de Amdahl}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgd41e9ee}]{Desmenuzando a Amdahl}
+\begin{itemize}
+\item El paralelismo puede aumentar fuertemente nuestro rendimiento
+\begin{itemize}
+\item \ldots{} ¿O no?
+\end{itemize}
+\item Incluso con un 95\% de ejecución paralela, se llega a un techo de
+ganancia al llegar a los 20 CPUs
+\begin{itemize}
+\item Cada procesador tiene un costo económico no trivial
+\item ¿Vale realmente la pena ir migrando hacia un paralelismo cada vez
+mayor?
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org92e1ae4}]{Observación de Gustafson}
+\begin{itemize}
+\item Por muchos años, la ley de Amdahl disminuyó el interés en el cómputo
+paralelo
+\item En 1988, John Gustafson obtuvo ganancias superiores a 1020x en una
+supercomputadora de 1024 procesadores
+\item \href{http://www.johngustafson.net/pubs/pub13/amdahl.htm}{Publicó una observación} que hizo re-evaluar este conocimiento
+\item La modificación no (sólo) será al tiempo de cómputo, \emph{sino que al
+problema mismo}
+\item Un artículo de apenas una cuartilla y lenguaje muy sencillo rompió
+el \emph{bloqueo mental} contra el paralelismo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0f1d4e5}]{Observación de Gustafson}
+  \small
+
+(\ldots{})Asumen implícitamente que el tiempo que se ejecuta en paralelo es
+independiente del número de procesadores, \alert{lo cual virtualmente nunca
+ocurre de este modo}. Uno no toma un problema de tamaño fijo para
+ejecutarlo en varios procesadores como no sea para hacer un ejercicio
+académico; en la práctica, \alert{el tamaño del problema crece con el número
+de procesadores}. \vfill
+
+Al obtener procesadores más poderosos, el problema generalmente se
+expande para aprovechar las facilidades disponibles. Los usuarios
+tienen control sobre cosas como la resolución de la malla, el número
+de pasos, la complejidad de los operadores y otros parámetros que
+usualmente se ajustan para permitir que el programa se ejecute en el
+tiempo deseado. \vfill
+
+Por tanto, podría ser más realista decir que el \alert{tiempo de ejecución},
+no el \alert{tamaño del problema}, es constante.
+\end{frame}
+\end{document}

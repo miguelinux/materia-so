@@ -1,0 +1,1153 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Administración de procesos: Bloqueos mutuos y políticas}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Administración de procesos: Bloqueos mutuos y políticas},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{El SO y los Bloqueos mutuos}
+\label{sec:org7e6a745}
+\begin{frame}[label={sec:org4554b30}]{Generalizando bloqueos mutuos}
+\begin{itemize}
+\item Estudiamos ya varios casos de bloqueos mutuos al hablar de
+sincronización
+\item Pueden presentarse en varios otros entornos
+\begin{itemize}
+\item De cómputo o de la vida real
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org34103ea}]{El encuentro de dos trenes}
+\begin{quote}
+Cuando dos trenes lleguen a un crucero, \emph{ambos deben detenerse por
+completo} y no avanzar hasta que el otro se haya ido
+\end{quote}
+\begin{center}
+{\scriptsize Ley aprobada por el Estado de Kansas, principios del siglo XX}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgb2ac606}]{El cruce de un semáforo: ¿Qué queremos evitar?}
+\begin{columns} \begin{column}{0.5\textwidth}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.55\textheight]{../img/new-york-city-gridlock.jpg}
+\caption{Tránsito detenido en Nueva York}
+\end{figure}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{../img/Gridlock.png}
+\caption{Bloqueo circular en el tránsito}
+\end{figure}
+\end{column} \end{columns}
+\begin{center}
+Imágenes: \href{https://en.wikipedia.org/wiki/Gridlock}{Wikipedia: Gridlock}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org2751da2}]{El cruce de un semáforo}
+\begin{itemize}
+\item Cuando dos personas llegan a un crucero sin semáforo, ¿quién tiene
+el paso?
+\end{itemize}
+\pause
+\begin{itemize}
+\item Reglamento de tránsito: El conductor que viene \emph{más por la
+derecha}
+\end{itemize}
+\begin{itemize}
+\item ¿Y qué procede cuando cuatro conductores llegan \emph{a la vez}?
+\end{itemize}
+\pause
+\begin{itemize}
+\item Legalmente, los cuatro deben detenerse y nunca más avanzar
+\item Uno podría echarse en reversa, otro podría ignorar la ley y pasar
+de todos modos, ¡pero es porque los conductores humanos tienen iniciativa!
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge707701}]{¿Cuándo se presenta un bloqueo mutuo?}
+\begin{center}
+Condiciones de Coffman
+\end{center}
+\begin{description}
+\item[{Exclusión mutua}] Los procesos reclaman acceso exclusivo de los
+recursos
+\item[{Espera por}] Los procesos mantienen los recursos que ya les habían
+sido asignados mientras esperan recursos adicionales
+\item[{No apropiatividad}] Los recursos no pueden ser extraídos de los
+procesos que los tienen hasta su completa utilización
+\item[{Espera circular}] Existe una cadena circular de procesos en que
+cada uno mantiene a uno o más recursos que son requeridos por el
+siguiente en la cadena
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org4d8b088}]{Evaluando en base a las condiciones de Coffman}
+\begin{itemize}
+\item Cada una de las condiciones presentadas son \emph{necesarias, pero no
+suficientes} para que haya un bloqueo
+\item Pero pueden alertarnos hacia una situación de riesgo
+\item Cuando se presentan las cuatro, tenemos un bloqueo mutuo que sólo
+puede resolverse terminando a uno de los procesos involucrados
+\begin{itemize}
+\item Pérdida de datos / estado
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3f34a5a}]{Ejemplo clásico de bloqueo mutuo (1)}
+\begin{center}
+Asumimos: Un sistema con dos unidades de cinta (acceso secuencial,
+no-compartible)
+
+Dos procesos, \emph{A} y \emph{B}, requieren de ambas unidades.
+\end{center}
+
+\begin{enumerate}
+\item \emph{A} solicita una unidad y se bloquea
+
+\item \emph{B} solicita una unidad y se bloquea
+
+\item El sistema operativo otorga la unidad \emph{1} a \emph{A} y lo vuelve a poner
+en ejecución
+
+\item \emph{A} continúa procesando; termina su periodo de ejecución
+
+\item El sistema operativo otorga la unidad \emph{2} a \emph{B} y lo vuelve a poner
+en ejecución
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[label={sec:orgf90b6e7}]{Ejemplo clásico de bloqueo mutuo (2)}
+\begin{enumerate}
+\setcounter{enumi}{5}
+\item \emph{B} solicita otra unidad y se bloquea
+
+\item El sistema operativo no tiene otra unidad por asignar. Mantiene a
+\emph{B} bloqueado; otorga el control de vuelta a \emph{A}
+
+\item \emph{A} solicita otra unidad y se bloquea
+
+\item El sistema operativo no tiene otra unidad por asignar. Mantiene a
+\emph{B} bloqueado; otorga el control de vuelta a otro proceso (o queda
+en espera)
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[label={sec:org825a86d}]{Esquematizando el ejemplo clásico}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{../img/dot/bloqueo_mutuo_simple.png}
+\caption{Esquema clásico de un bloqueo mutuo simple: Los procesos \emph{A} y \emph{B} esperan mutuamente para el acceso a las unidades \emph{1} y \emph{2}.}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orge93552b}]{El punto de vista del sistema operativo}
+\begin{itemize}
+\item El rol del sistema operativo va más allá de lo presentado en las
+láminas anteriores (\emph{Exclusión mutua})
+\item No podemos asumir que los procesos cooperarán entre sí
+\begin{itemize}
+\item Ni siquiera que sabrán por anticipado de la existencia mutua
+\end{itemize}
+\item Un rol primario del sistema operativo es gestionar los recursos del
+equipo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6085833}]{Políticas de prevención o resolución de bloqueos mutuos}
+\begin{center}
+Si el sistema \emph{establece políticas} respecto a la asignación de
+recursos, puede evitar casos como el presentado.
+
+Las políticas pueden verse en un contínuo entre:
+\end{center}
+\begin{description}
+\item[{Liberales}] Buscan a otorgar los recursos lo antes posible cuando
+son solicitados
+\item[{Conservadoras}] Controlan más el proceso de asignación de recursos
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:orgca8bbbe}]{Espectro liberal-conservador de políticas}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/dot/deadlocks_conserv_lib.png}
+\caption{Espectro liberal—conservador de esquemas para evitar bloqueos}
+\end{figure}
+
+\begin{center}
+{\scriptsize Volveremos a este diagrama hacia el final del tema}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org12a1083}]{Categorías de estrategias ante bloqueos mutuos}
+\begin{description}
+\item[{Prevención}] Modela el comportamiento del sistema para \emph{eliminar
+toda posibilidad} de un bloqueo.
+
+Resulta en una utilización subóptima de recursos.
+
+\item[{Evasión}] Impone condiciones menos estrictas. No puede evitar
+\emph{todas las posibilidades} de un bloqueo; cuando éste se
+produce busca \emph{evitar} sus consecuencias.
+
+\item[{Detección y recuperación}] \emph{Permite} que ocurran los bloqueos, pero
+busca \emph{determinar si ha ocurrido} y actuar para eliminarlos.
+\end{description}
+\end{frame}
+
+\section{Prevención}
+\label{sec:orgcfd9c8a}
+
+\begin{frame}[label={sec:org8d39e2e}]{Característica básica}
+\begin{center}
+Modela el comportamiento del sistema para \emph{eliminar toda posibilidad}
+de un bloqueo.
+
+Resulta en una utilización subóptima de recursos.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org0a78cf3}]{Serialización}
+\begin{itemize}
+\item Previene caer en bloqueos negando que el sistema otorgue recursos a
+más de un proceso a la vez
+\item Los diferentes procesos pueden seguir ejecutando
+\begin{itemize}
+\item Realizando cálculos
+\item Empleando recursos \emph{no rivales}
+\end{itemize}
+\item Podría emplearse en un esquema tipo multiprogramación temprana (no
+interactiva)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org77bfb0d}]{Serializando el ejemplo clásico de bloqueo mutuo (1)}
+\begin{enumerate}
+\item \emph{A} solicita una unidad y se bloquea
+
+\item \emph{B} solicita una unidad y se bloquea
+
+\item El sistema operativo otorga la unidad \emph{1} a \emph{A} y lo vuelve a poner
+en ejecución
+
+\item \emph{A} continúa procesando; termina su periodo de ejecución
+
+\item El sistema operativo mantiene bloqueado a \emph{B}, dado que \emph{A} tiene
+un recurso
+
+\item \emph{A} solicita otra unidad  y se bloquea
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[label={sec:orgbd69224}]{Serializando el ejemplo clásico de bloqueo mutuo (2)}
+\begin{enumerate}
+\setcounter{enumi}{6}
+\item El sistema operativo otorga la unidad \emph{2} a \emph{A} y lo vuelve a poner
+en ejecución
+
+\item \emph{A} libera la unidad \emph{1}
+
+\item \emph{A} libera la unidad \emph{2} (y con ello, el bloqueo de uso de
+recursos)
+
+\item El sistema operativo otorga la unidad \emph{1} a \emph{B} y lo vuelve a
+poner en ejecución
+
+\item \emph{B} solicita otra unidad y se bloquea
+
+\item El sistema operativo otorga la unidad \emph{2} a \emph{B} y lo vuelve a
+poner en ejecución
+
+\item \emph{B} libera la unidad \emph{1}
+
+\item \emph{B} libera la unidad \emph{2}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[label={sec:org53e8197}]{Analizando a la serialización}
+\begin{itemize}
+\item Previene toda posibilidad de bloqueo ante solicitud de recursos
+\item Pero se vuelve muy susceptible a la inanición
+\item Lleva a subutilización de los recursos
+\begin{itemize}
+\item Con \emph{n} procesos, puede haber \emph{n-1} esperando a que uno libere los
+recursos.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8a905ea}]{\emph{Retención y espera} o \emph{Reserva} (\emph{advance claim})}
+\begin{itemize}
+\item Política de prevención \emph{menos conservadora}
+\item Todos los programas al iniciar su ejecución \emph{declaran} qué recursos
+requerirán
+\item Apartados para uso exclusivo hasta que el proceso termina
+\item El sistema puede seguir concediendo solicitudes \emph{que no rivalicen}
+\begin{itemize}
+\item Si \emph{C} y \emph{D} requieren recursos \emph{diferentes} de \emph{A} y \emph{B}, pueden
+ejecutarse en paralelo \emph{A}, \emph{C} y \emph{D}
+\item Posteriormente, \emph{B}, \emph{C}, \emph{D}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2f69b4a}]{Desventajas de la \emph{retención y espera}}
+\begin{itemize}
+\item Recursos reservados por \emph{toda la ejecución} del proceso
+\begin{itemize}
+\item Incluso si la requieren por un tiempo muy limitado
+\end{itemize}
+\item Percepción de \emph{injusticia} por inanición
+\begin{itemize}
+\item Tiempo de espera para el usuario que lanzó \emph{B}
+\end{itemize}
+\item Requiere que el programador sepa por anticipado los recursos que requerirá
+\begin{itemize}
+\item Muchas veces es imposible
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd5f098d}]{Solicitud \emph{de una vez} (\emph{one-shot})}
+\begin{itemize}
+\item Otro mecanismo de prevención de bloqueos
+\item Un proceso sólo puede solicitar recursos \emph{cuando no tiene ninguno}
+\begin{itemize}
+\item Dos variantes: Todos de inicio, o soltar y readquirir
+\end{itemize}
+\item Rompe la condición de \emph{espera por}
+\item \ldots{}¡Pero hay muchos recursos que deben \emph{mantenerse bloqueados} por
+largo plazo!
+\item Cambia la lógica de programación al tener puntos definidos de
+adquisición y liberación
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org39dd7a9}]{Asignación de recursos \emph{jerárquica}}
+\begin{itemize}
+\item A cada categoría de recursos se le asigna una prioridad o \emph{nivel jerárquico}
+\item Un proceso dado sólo puede solicitar recursos \emph{de un nivel superior}
+a los que ya tiene asignados.
+\begin{itemize}
+\item Para pedir dos dispositivos del mismo nivel, debe hacerse de
+forma \emph{atómica}
+\item Si tanto \(P_1\) como \(P_2\) requieren dos unidades de cinta, ambos
+deben pedirlas a ambas de una sola vez
+\item El planificador elegirá cuál \emph{gana}; ese tendrá ambos recursos
+\item El otro esperará hasta que éste termine
+\item No hay bloqueo
+\end{itemize}
+\item Podríamos presentar a la solicitud \emph{de una vez} como un caso
+degenerado de asignación jerárquica.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1804ec1}]{Asignación de recursos \emph{jerárquica}}
+\begin{itemize}
+\item Si \(P_1\) y \(P_2\) requieren una impresora y una unidad de cinta, hay
+un órden claro en que tienen que pedirse
+\begin{itemize}
+\item No hay bloqueo
+\end{itemize}
+\item Los recursos más escasos están más arriba en la jerarquía
+\begin{itemize}
+\item Esto hace que lleguen menos solicitudes por ellos
+\end{itemize}
+\end{itemize}
+\begin{center}
+\ldots{} ¿Pero?
+\end{center}
+\begin{itemize}
+\item Es un ordenamiento demasiado estricto para muchas situaciones del
+mundo real
+\item Lleva a los procesos a acaparar recursos de baja prioridad
+\item Conduce a inanición
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8bb67a2}]{Sorteando los mecanismos de prevención}
+\begin{itemize}
+\item ¿Podemos \emph{burlar} estos mecanismos?
+\begin{itemize}
+\item P.ej. empleando procesos \emph{representantes} (\emph{proxy})
+\end{itemize}
+\item Un programador poco cuidadoso puede, sin llegar a \emph{bloqueo por
+recursos}, llegar a un \emph{bloqueo por procesos}
+\begin{itemize}
+\item Pero una \emph{buena práctica} sería descargar el uso de recursos
+rivales en un proceso que sepa cómo compartirlos
+\emph{inteligentemente}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3601a04}]{Prevención de bloqueos: Resumiendo}
+\begin{itemize}
+\item Mecanismos muy \emph{conservadores} pero 100\% efectivos (si nos limitamos
+a lo \emph{declarado}\ldots{})
+\item Parecerían poco acordes a un entorno multiusuario/multitarea como la
+mayoría de los actuales
+\item Sin embargo, empleados para ciertos subsistemas, con \emph{esquemas de mediación}
+\begin{itemize}
+\item Impresión
+\item Audio
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Evasión}
+\label{sec:orgb39d1c7}
+
+\begin{frame}[label={sec:org3604259}]{Característica básica}
+\begin{center}
+Impone condiciones menos estrictas. No puede evitar \emph{todas las
+posibilidades} de un bloqueo; cuando éste se produce busca \emph{evitar}
+sus consecuencias.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgbc28042}]{Enfoque 1: Flujos seguros e inseguros}
+\begin{itemize}
+\item Realizado por el planificador
+\item Requiere saber \emph{por anticipado} qué procesos utilizarán qué recursos
+\begin{itemize}
+\item Un poco menos detallado que la prevención (número de recursos por
+categoría)
+\end{itemize}
+\item Saber \emph{cuándo} se va a usar cada recurso
+\item Análisis de la interacción, marcando \emph{áreas de riesgo}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga86016c}]{Flujos seguros e inseguros}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\textwidth]{../img/gnuplot/tray_proc_evasion_bloqueo.png}
+\caption{Evasión de bloqueos: Los procesos \emph{A} (horizontal) y \emph{B} (vertical) requieren del acceso exclusivo a dos recursos rivales, exponiéndose a bloqueo mutuo.}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org5109055}]{Áreas de riesgo}
+\begin{itemize}
+\item Mientras avancemos por el \emph{área segura} no hay riesgo de bloqueos
+\item Sistemas uniprocesador, sólo avance vertical/horizontal
+\begin{itemize}
+\item Sistemas multiprocesador, avance diagonal
+\end{itemize}
+\item Áreas de riesgo: Cuando \emph{alguno de los recursos rivales} es otorgado
+\item El bloqueo mutuo se produce cuando \(3 \le t_A \le 7\), y \(4 \le t_B
+  \le 6\)
+\item Pero, \emph{sabiendo esto}, el SO debe mantener a \(t_B < 2\) siempre que
+\(2 \le t_A \le 3\)
+\begin{itemize}
+\item O a \(t_A < 2\) siempre que \(2 \le t_B \le 4\).
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5f619ec}]{Analizando esta estrategia}
+\begin{itemize}
+\item Muy dificil de implementar en un sistema de propósito general
+\begin{itemize}
+\item Requiere análisis estático previo del código
+\item O requisitos de programación diferentes a los expuestos por los
+sistemas en uso generalizado
+\end{itemize}
+\item Puede especificarse dentro de un \emph{marco de desarrollo}: Asignación
+de recursos por \emph{subrutina}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf102f38}]{Enfoque 2: \emph{Algoritmo del banquero}}
+\begin{itemize}
+\item Edsger Dijkstra, para el sistema operativo THE, 1965-1968
+\item El sistema procede cuidando de la \emph{liquidez} para siempre poder
+satisfacer los \emph{préstamos} (recursos) de sus clientes
+\item Permite que el \emph{conjunto de recursos} solicitados por los procesos
+sean mayores a los disponibles
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org007d478}]{Requisitos para el \emph{Algoritmo del banquero}}
+\begin{itemize}
+\item Debe ejecutarse cada vez que un proceso solicita recursos
+\item Todo proceso debe declarar su \emph{reclamo máximo} (\emph{claim}) de
+recursos al iniciar su ejecución
+\begin{itemize}
+\item Si el reclamo en cualquier categoría es superior al máximo
+existente, el sistema niega la ejecución
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4380007}]{Estructuras a emplear: Relativas a procesos}
+\begin{center}
+Matrices (llaves por categoría y por proceso)
+\end{center}
+\begin{description}
+\item[{Reclamado}] Número de instancias de este recurso que han sido
+reclamadas
+\item[{Asignado}] Número de instancias de este recurso actualmente
+asignadas a procesos en ejecución
+\item[{Solicitado}] Número de instancias de este recurso actualmente
+pendientes de asignar (solicitudes hechas y no
+cumplidas)
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org69d5b13}]{Estructuras a emplear: Categorías de recursos}
+\begin{center}
+Listas (llave por categoría)
+\end{center}
+\begin{description}
+\item[{Disponibles}] Número total de instancias de este recurso
+disponibles al sistema
+
+\item[{Libres}] Número de instancias de este recurso que no están
+actualmente asignadas a ningún proceso
+\end{description}
+\end{frame}
+
+
+\begin{frame}[label={sec:orgf8102d2}]{Estados}
+\begin{description}
+\item[{Estado}] Matrices de recursos disponibles, reclamos máximos y
+asignación de recursos a los procesos en un momento dado
+\item[{Estado seguro}] Un estado en el cual todos los procesos pueden
+ejecutar hasta el final sin encontrar un bloqueo
+mutuo.
+\item[{Estado inseguro}] Todo estado que no garantice que todos los
+procesos puedan ejecutar hasta el final sin encontrar un bloqueo
+mutuo.
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org98c68db}]{Lógica del algoritmo del banquero}
+\begin{center}
+Cada vez que un proceso solicita recursos, se calcula cuál sería el
+estado resultante de \emph{otorgar} dicha solicitud, y se otorga siempre
+que:
+\end{center}
+
+\begin{itemize}
+\item No haya reclamo por más recursos que los disponibles
+
+\item Ningún proceso solicite (o tenga asignados) recursos por encima de
+su reclamo
+
+\item La suma de los recursos \emph{asignados} por cada categoría no sea mayor
+a la cantidad de recursos \emph{disponibles} en el sistema para dicha
+categoría
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgbd14eef}]{Definiendo estados \emph{seguros}}
+\begin{center}
+Un estado \emph{es seguro} cuando hay una secuencia de procesos (denominada
+\emph{secuencia segura}) tal que:
+\end{center}
+\begin{enumerate}
+\item Un proceso \emph{j} puede necesariamente terminar su ejecución
+\begin{itemize}
+\item Incluso si solicitara \emph{todos} los recursos que reservó en su
+reclamo
+\item Siempre debe haber suficientes recursos libres para satisfacerlo
+\end{itemize}
+
+\item Un segundo proceso \emph{k} de la secuencia puede terminar:
+\begin{itemize}
+\item Si \emph{j} termina y libera todos los recursos que tiene
+\item Siempre que sumado a los recursos disponibles ahora, con aquellos
+que liberaría \emph{j}, hay suficientes recursos libres
+\end{itemize}
+
+\item El \emph{i}-ésimo proceso puede terminar si todos los procesos
+anteriores terminan y liberan sus recursos.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[label={sec:orga9f0e62}]{Peor caso con el algoritmo del banquero}
+\begin{center}
+En el peor de los casos, esta secuencia segura nos llevaría a bloquear
+todas las solicitudes excepto las del proceso único en el órden
+presentado.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org11d12c3}]{Ejemplo}
+\begin{center}
+Asumiendo que tenemos \emph{sólo una clase de recursos} y nos quedan dos
+instancias libres:
+\end{center}
+\begin{center}
+\begin{tabular}{lrr}
+Proceso & Asignado & Reclamando\\
+\hline
+\emph{A} & 4 & 6\\
+\emph{B} & 4 & 11\\
+\emph{C} & 2 & 7\\
+\end{tabular}
+\end{center}
+
+\begin{enumerate}
+\item \emph{A} puede terminar porque sólo requiere dos instancias adicionales
+\item Terminado \emph{A}, \emph{C} puede recibir las 5 restantes que requiere
+\item Terminados \emph{A} y \emph{C}, \emph{B} puede satisfacer las 7
+\item La secuencia \emph{A-C-B} es segura.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[label={sec:org89cd926}]{Ejemplo 2}
+\begin{center}
+Sólo una clase de recursos, 2 instancias libres
+\end{center}
+\begin{center}
+\begin{tabular}{lrr}
+Proceso & Asignado & Reclamado\\
+\hline
+\emph{A} & 4 & 6\\
+\emph{B} & 4 & 11\\
+\emph{C} & 2 & 9\\
+\end{tabular}
+\end{center}
+\begin{enumerate}
+\item \emph{A} puede satisfacer su demanda
+\item Pero una vez terminado \emph{A}, no podemos asegurar las necesidades ni
+de \emph{B} ni de \emph{C}
+\item Este es un \emph{estado inseguro}, por lo cual el algoritmo del
+banquero \emph{no debe permitir llegar a él}.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[label={sec:orgd46cb24}]{Ejemplo 3: Paso por paso}
+\begin{center}
+¿Hasta dónde nos dejaría \emph{avanzar} el algoritmo del banquero?
+\end{center}
+\begin{itemize}
+\item Estado inicial:
+\begin{itemize}
+\item 8 recursos disponibles
+\item Reclamos: \(P_1\): 5, \(P_2\): 5, \(P_3\): 4
+\end{itemize}
+\item \(t_1\): \(P_1\) con 2, \(P_2\) con 1, \(P_3\) con 1
+\item \(t_2\): \(P_2\) solicita 1
+\item \(t_3\): \(P_3\) solicita 1
+\item \(t_4\): \(P_1\) solicita 1
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8ca7957}]{Ejemplo 3: Paso por paso}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/banquero1.png}
+\end{figure}
+
+\begin{center}
+{\scriptsize Imagen: Samuel Oporto Díaz }
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgd5afd53}]{Ejemplo 3: Paso por paso}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/banquero2.png}
+\end{figure}
+
+\begin{center}
+{\scriptsize Imagen: Samuel Oporto Díaz }
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgc12d69c}]{Ejemplo 3: Paso por paso}
+\begin{itemize}
+\item El algoritmo nos permite avanzar por \(t_1\), \(t_2\), \(t_3\)
+\begin{itemize}
+\item Uso \emph{efectivo} de recursos del sistema: 14
+\item \emph{Sobrecompromiso} (\emph{overcommitment}) ante los 8 recursos \emph{reales}
+\end{itemize}
+\item Al llegar a \(t_4\), otorgar un recurso a \(P_1\) nos ubica en un
+\emph{estado inseguro}
+\begin{itemize}
+\item Es imposible satisfacer el reclamo completo de \(P_1\), \(P_2\) o \(P_3\)
+\item Desde \(t_3\), \emph{sólo} podemos otorgar recursos a \(P_3\)
+\item \(P_1\) y \(P_2\) pueden seguir ejecutando \emph{si no solicitan recursos}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4b6ee80},fragile]{Implementación ejemplo (para una sóla categoría)}
+ \begin{verbatim}
+l = ['A', 'B', 'C', 'D', 'E']; # Todos los procesos del sistema
+s = []; # Secuencia segura
+while ! l.empty? do
+  p = l.select {|id| reclamado[id] - asignado[id] <= libres}.first
+  raise Exception, 'Estado inseguro' if p.nil?
+  libres += asignado[p]
+  l.delete(p)
+  s.push(p)
+end
+puts "La secuencia segura encontrada es: " + s
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orgcc1ca9a}]{Precisiones}
+\begin{itemize}
+\item En el ejemplo 2, es posible que ni \emph{B} ni \emph{C} requirieran ya \emph{todos}
+sus recursos reclamados
+\item Pero el estado es inseguro.
+\item El algoritmo del banquero, en el peor caso, puede tomar \(O(n!)\)
+\begin{itemize}
+\item Típicamente toma \(O(n^2)\)
+\end{itemize}
+\item Hay refinamientos a este algoritmo que reducen su costo de ejecución
+\begin{itemize}
+\item Puede ser llamado con muy alta frecuencia
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org587b71b}]{Precisiones}
+\begin{itemize}
+\item Es un algoritmo \emph{conservador}: Evita entrar en estados inseguros
+\emph{a pesar de que no lleve con certeza a un bloqueo mutuo}
+\begin{itemize}
+\item Pero es la política más liberal que evita los bloqueos \emph{sin
+conocer órden y tiempo} de necesidad de recursos.
+\end{itemize}
+\item Desventaja de \emph{todos} los algoritmos basados en la evasión:
+Requieren saber por anticipado los reclamos máximos
+\begin{itemize}
+\item No siempre es posible con el modelo actual de computación
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Detección y recuperación}
+\label{sec:org9fedec5}
+
+\begin{frame}[label={sec:orgda267f2}]{Característica básica}
+\begin{center}
+\emph{Permite} que ocurran los bloqueos, pero busca \emph{determinar si ha
+ocurrido} y actuar para eliminarlos.
+
+A diferencia de la \emph{prevención} y la \emph{evasión}, las cuatro
+condiciones de Coffman \emph{pueden presentarse}.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgde154ff}]{Funcionamiento básico}
+\begin{itemize}
+\item Se ejecuta como una tarea \emph{periódica}
+\begin{itemize}
+\item Busca \emph{limitar} el impacto de los bloqueos \emph{existentes} en el
+sistema
+\item (Discutiremos al respecto más adelante\ldots{})
+\end{itemize}
+\item Mantenemos una lista de recursos existentes, asignados y
+solicitados
+\item Eliminando lo \emph{obviamente resuelto}, nos quedamos con lo
+\emph{obviamente bloqueado}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb62b46f}]{Representación con grafos dirigidos}
+\begin{itemize}
+\item Procesos con cuadrados
+\item Recursos con círculos
+\begin{itemize}
+\item Puede representarse una \emph{clase de recursos} como un círculo
+grande, \emph{conteniendo} círculos pequeños indicando \emph{recursos
+idénticos}
+\item Si un proceso puede solicitar \emph{un recurso específico} (y no
+\emph{cualquiera de una categoría}), no son idénticos
+\end{itemize}
+\item Flecha de un recurso a un proceso: El recurso \emph{está asignado} al
+proceso.
+\item Flecha de un proceso a un recurso: El proceso \emph{está solicitando} al
+recurso.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org07da955}]{Estrategia general}
+\begin{itemize}
+\item Tenemos la representación completa de los recursos y procesos en el
+sistema
+\item Buscamos \emph{reducir} la gráfica, retirando los elementos que no
+aportan \emph{información relevante}:
+\begin{enumerate}
+\item Los procesos que no estén solicitando ni tienen asignado un
+recurso
+\item Para los procesos restantes: Si todos los recursos que solicitan
+\emph{pueden ser concedidos} (no están concedidos a otro), eliminamos
+al proceso y a todas sus flechas.
+\begin{itemize}
+\item Repetimos cuantas veces sea posible
+\end{itemize}
+\item Si no quedan procesos en el grafo, no hay interbloqueos y podemos
+continuar
+\item Los procesos ``irreductibles'' están en bloqueo mutuo.
+\begin{itemize}
+\item Proceder según la política del sistema
+\end{itemize}
+\end{enumerate}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga7b27d8}]{Ejemplo 1}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.6\textwidth]{../img/dot/deteccion_bloqueos.png}
+\caption{Detección de ciclos denotando bloqueos: Grafo de procesos y recursos en un momento dado}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgc88fc38}]{Resolviendo el ejemplo 1}
+\begin{enumerate}
+\item Reducimos por \emph{B}, dado que actualmente no está esperando a ningún
+recurso
+
+\item Reducimos por \emph{A} y \emph{F}, dado que los recursos por los cuales están
+esperando quedarían libres en ausencia de \emph{B}
+
+\item Quedamos con un interbloqueo entre \emph{C}, \emph{D} y \emph{E}, en torno a los
+recursos \emph{4}, \emph{5} y \emph{7}.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[label={sec:orge20d48b}]{Ejemplo 2}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.4\textwidth]{../img/deteccion_bloqueos_por_pasos_1.png}
+\caption{Ejemplo con categorías de recursos (Imágenes: Luis La Red)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org827cade}]{Ejemplo 2}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{../img/deteccion_bloqueos_por_pasos_2.png}
+\caption{Resultado de reducir por P9}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orga40d0ea}]{Ejemplo 2}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{../img/deteccion_bloqueos_por_pasos_3.png}
+\caption{Resultado de reducir por P7}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org778bd33}]{Ejemplo 2}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{../img/deteccion_bloqueos_por_pasos_4.png}
+\caption{Resultado de reducir por P8}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org6242e3d}]{¡No todo ciclo es un bloqueo!}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.6\textheight]{../img/ciclo_no_bloqueo.png}
+\caption{Al manejar \emph{categorías} de recursos, no siempre un ciclo implicará un bloqueo}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org1c2161b}]{Bloqueado \emph{vs.} bloqueando}
+\begin{itemize}
+\item \emph{Reducir un proceso} no implica que este \emph{haya entregado} sus recursos
+\begin{itemize}
+\item Sólo que \emph{está en posibilidad de hacerlo}
+\item Puede haber inanición por parte de cualquier proceso que espera
+\end{itemize}
+\item Podría agregarse a este algoritmo una ponderación por tiempo
+excesivo de retención
+\begin{itemize}
+\item Pero causaría muchos falsos positivos \(\rightarrow\) ¡Muchos casos de
+procesos finalizados sin necesidad!
+\end{itemize}
+\end{itemize}
+
+\begin{center}
+Ahora\ldots{} Una vez detectado el bloqueo, ¿qué procede?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org14ee54f}]{\emph{Mátelos, luego 'virigüa}}
+\begin{itemize}
+\item Terminar a \emph{todos} los procesos bloqueados
+\item Técnica más sencilla y más justa\ldots{}
+\begin{itemize}
+\item Para cierta definición de justicia
+\end{itemize}
+\item Maximiza la pérdida de información
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org581de25}]{Retroceder al último \emph{punto de control} (\emph{checkpoint})}
+\begin{itemize}
+\item Sólo cuando el sistema implementa esta funcionalidad
+\item Sólo cuando \emph{ninguno} de los procesos depende de factores
+externos
+\item Retroceder en el tiempo, ¿no llevaría a un nuevo bloqueo?\pause
+\item Los bloqueos están ligados al órden \emph{específico} de ejecución
+\item Probablemente otro orden específico se salve del bloqueo
+\begin{itemize}
+\item Y si no\ldots{} Se vuelve una vez más.
+\item Tal vez, agregar un contador de \emph{intentos} que cambie el planificador
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org85e511b}]{Terminación selectiva / limitada}
+\begin{itemize}
+\item Terminar forzosamente, uno a uno (y no en bloque), a los procesos
+bloqueados
+\begin{itemize}
+\item Terminar a uno y re-evaluar el estado
+\item Los restantes pueden continuar operando
+\end{itemize}
+\item ¿Cómo elijo al desafortunado? Varias estrategias\ldots{}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgfdd89f2}]{Estrategias para elegir el proceso a terminar (1)}
+\begin{itemize}
+\item Los procesos más sensibles para detener/relanzar: Los que
+demandan \emph{garantías de tiempo real}. Evitar penalizarlos.
+\item Causar una menor pérdida de trabajo. El que haya consumido menor
+cantidad de procesador hasta el momento.
+\item Mayor tiempo restante estimado (si puedo estimar cuánto
+procesamiento \emph{queda pendiente})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3df7048}]{Estrategias para elegir el proceso a terminar (2)}
+\begin{itemize}
+\item Menor \emph{número} de recursos asignados hasta ahora (como criterio
+de \emph{justicia}: ¿qué proceso está haciendo un uso \emph{más juicioso}
+del sistema?)
+\item Prioridad más baja (cuando la hay)
+\item Procesos con naturaleza repetible sin pérdida de información
+(aunque sí de tiempo)
+\begin{itemize}
+\item p.ej. es mejor interrupmir una compilación que la actualización
+de una BD
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org21af596}]{Periodicidad del chequeo}
+\begin{itemize}
+\item Si buscamos bloqueos cada vez que se solicita un recurso, es una
+sobrecarga administrativa demasiado grande
+\item Con una periodicidad fija: Arriesga a que los procesos pasen más
+tiempo bloqueados (\(\approx0.5t\))
+\item Cuando el \emph{nivel de uso} del CPU baje de cierto porcentaje
+\begin{itemize}
+\item Indica que hay un nivel elevado de procesos en espera
+\item \ldots{}Pero un sistema demasiado ocupado puede nunca \emph{disparar} esta condición
+\end{itemize}
+\item Una estrategia combinada
+\end{itemize}
+\end{frame}
+
+\section{La triste realidad\ldots{}}
+\label{sec:org64ae0a6}
+
+\begin{frame}[label={sec:org4a75379}]{Frustraciones\ldots{}}
+\begin{itemize}
+\item Les advertí que este tema me resultaba frustrante
+\item Hemos visto varios enfoques a cómo lidiar con la presencia de
+bloqueos
+\item Es un área viva y activa de investigación, y viene avanzando desde
+los primeros días del multiprocesamiento
+\item Sin embargo\ldots{}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9c1c88e}]{Recapitulando: Conservadores y liberales}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/dot/deadlocks_conserv_lib.png}
+\caption{Espectro liberal—conservador de esquemas para evitar bloqueos}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org3830e1d}]{El Algoritmo del avestruz}
+\begin{itemize}
+\item Mecanismo más frecuente utilizado por los sistemas operativos de
+propósito general
+\item Ignorar las situaciones de bloqueo
+\item Esconder la cabeza bajo tierra y esperar a que pasen
+\item Esperar que su ocurrencia sea suficientemente poco frecuente
+\item Esperar que el usuario detecte y resuelva el problema por sí sólo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgcea24c5}]{El por qué del avestruz}
+\begin{itemize}
+\item Las condiciones impuestas por las diversas estrategias son casi
+imposibles de alcanzar
+\item Conocimiento previo de requisitos insuficiente
+\item Bloqueos originados fuera de nuestra esfera de acción
+\begin{itemize}
+\item Recursos externos
+\item Procesos \emph{representante} (\emph{proxy})
+\item Estructuras a niveles superiores
+\end{itemize}
+\item Modelo de computación tendiente al interactivo
+\begin{itemize}
+\item En servidores: Programas (¡y personas!) dedicados al monitoreo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2c779b0}]{¿Qué es un recurso?}
+\begin{itemize}
+\item Para que estos mecanismos funcionen, tenemos que definir qué es un
+recurso — A qué esperamos cubrir (y, por tanto, a qué no)
+\begin{itemize}
+\item No sólo cintas, impresoras, tarjetas de audio\ldots{}
+\item ¡También segmentos de memoria, tiempo de procesamiento!
+\item ¿Y las estructuras \emph{lógicas} creadas por el SO? Archivos,
+semáforos, monitores, \ldots{}
+\item ¿Y elementos que vienen de \emph{fuera de nuestro sistema}? (cómputo
+distribuído, SOAP/servicios Web, etc.)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge0f9685}]{Cuestión de compromisos}
+\begin{itemize}
+\item Un sistema operativo de propósito general tiene que funcionar para
+muy distintas situaciones
+\begin{itemize}
+\item Es muy difícil plantear esquemas aptos para toda necesidad
+\end{itemize}
+\item Debe tomarse una decisión entre lo \emph{correcto} y lo \emph{conveniente}
+\begin{itemize}
+\item Un SO no debería permitir que hubiera bloqueos
+\item Pero la inconveniencia a usuarios y programadores sería demasiada
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgce3633e}]{Cuestión de programar \emph{defensivamente}}
+\begin{center}
+El programador puede tomar ciertas medidas para evitar que \emph{su
+programa} caiga en situaciones de bloqueo
+\end{center}
+\begin{itemize}
+\item Solicitar recursos con llamadas \emph{no bloqueantes}
+\item Temporizadores y manejo de errores
+\item Particularmente, \emph{notificar al usuario} en caso de demoras o fallas
+repetidas
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org519841e}]{Aplicaciones de monitoreo en espacio de usuario}
+\begin{itemize}
+\item El monitoreo también ha caído hacia el terreno de las aplicaciones
+\item Brinda mayor flexibilidad
+\begin{itemize}
+\item Aunque menos poder
+\end{itemize}
+\item Hay cientos de aplicaciones de monitoreo para todo tipo de situaciones
+\item Un monitor \emph{inteligente}, adaptado para un \emph{servicio} en particular,
+puede detectar mejor situaciones anómalas (y no sólo bloqueos)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org621042a}]{Posiciones disciplinares: Matemáticos contra ingenieros}
+\begin{itemize}
+\item ¿Dónde cabe mejor la computación? ¿Y dónde cabemos mejor \emph{cada uno
+de nosotros}?
+\item La asignación de recursos puede verse como un problema formal,
+matemático
+\begin{itemize}
+\item Los mecanismos descritos no son perfectos
+\item Pero el problema \emph{no ha demostrado ser intratable}
+\item Un bloqueo es claramente un error
+\end{itemize}
+\item Los matemáticos en nuestro \emph{árbol genealógico académico} nos llaman
+a no ignorar el problema
+\begin{itemize}
+\item A resolverlo sin importar la complejidad computacional
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0aa919c}]{El punto de vista del ingeniero}
+\begin{itemize}
+\item La ingeniería es la ciencia \emph{aplicada al mundo real}
+\item Debe, sí, evitar efectos nocivos
+\begin{itemize}
+\item Pero también, calcula costos, probabilidades de impacto, umbrales
+de tolerancia\ldots{}
+\end{itemize}
+\item Un sistema típico \emph{corre riesgo} de caer en un bloqueo con una
+probabilidad \(p>0\)
+\begin{itemize}
+\item Impacto: Perder \emph{dos procesos} en un sistema
+\item Otros factores de fallo: Hardware, otros subsistemas del SO,
+errores en cada uno de los programas\ldots{}
+\end{itemize}
+\item Prevenir el bloqueo conlleva complejidad en desarrollo o disminución
+en rendimiento
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org137b697}]{Resumiendo a las avestruces}
+\begin{itemize}
+\item No podemos decir \emph{este camino es correcto} o \emph{este no}
+\item Depende de muchos factores
+\begin{itemize}
+\item Ámbito del bloqueo
+\item Función del sistema operativo en cuestión
+\item Costo de implementación
+\end{itemize}
+\item Hecho: Tenemos avestruces \emph{ahí afuera}, al igual que tenemos
+sistemas críticos que requieren verificación formal a cada
+asignación
+\item \ldots{}Lo que no vale es que \emph{nosotros} seamos las avestruces.
+\end{itemize}
+\end{frame}
+\end{document}

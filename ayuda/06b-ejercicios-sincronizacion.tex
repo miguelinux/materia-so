@@ -1,0 +1,335 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Administración de procesos: Ejercicios de sincronización}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Administración de procesos: Ejercicios de sincronización},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Introducción}
+\label{sec:org2b1dd9e}
+
+\begin{frame}[label={sec:orgd3d6c0a}]{Introducción}
+\begin{itemize}
+\item En estas láminas presento varios ejercicios de sincronización
+\item Sin un órden claro
+\begin{itemize}
+\item Simplemente son ejercicios que, comprendiendo los fundamentos de
+concurrencia y sincronización, deben poder realizar.
+\end{itemize}
+\item Sugiero su implementación empleando semáforos
+\begin{itemize}
+\item Pero pueden emplear cualquier otro mecanismo de sincronización.
+\end{itemize}
+\item Uso probable de estas láminas
+\begin{itemize}
+\item Tarea
+\item Ejercicios en clase
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{De gatos y ratones}
+\label{sec:orgc48bf05}
+\begin{frame}[label={sec:org985144f}]{Planteamiento}
+\begin{center}
+Tengo \(k\) gatos (y desafortunadamente, \(l\) ratones) en su casa.
+\vskip 1em
+Le sirvo la comida a mis gatos en \(m\) platos.
+\vskip 1em
+Gatos y ratones han llegado a un acuerdo para repartirse el tiempo y
+comida — Pero tienen que convencerme de que están haciendo su trabajo.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgd9a2693}]{Reglas}
+\begin{itemize}
+\item Los gatos pueden comer de sus \(m\) platos de comida.
+\item Los ratones pueden comer de esos mismos platos siempre y cuando no
+sean vistos.
+\item Si un gato ve a un ratón comiendo, se lo \emph{debe} comer (para
+mantener su reputación)
+\end{itemize}
+\begin{itemize}
+\item Los platos están puestos uno junto al otro
+\begin{itemize}
+\item Sólo un animal puede comer de cada plato a la vez
+\item Si un gato está comiendo y un ratón comienza a comer de otro
+plato, el gato lo ve (y se lo come).
+\item Por \emph{acuerdo de caballeros}, los gatos no se van a acercar a los
+platos mientras hay ratones comiendo.
+\end{itemize}
+\item Importante: ¡Hay que evitar la inanición!
+\end{itemize}
+\end{frame}
+
+\section{Intersección de caminos}
+\label{sec:org87fa391}
+\begin{frame}[label={sec:orgada327c}]{Planteamiento}
+\begin{center}
+Hay un cruce de caminos sin señalamiento vial:
+
+\begin{center}
+\includegraphics[height=0.3\textheight]{../img/cruce_caminos.png}
+\end{center}
+
+El tránsito puede llegar desde cualquier lugar y en cualquier
+momento. ¿Cómo aseguramos que no haya choques?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgd81ac98}]{Reglas}
+\begin{itemize}
+\item No puede haber dos autos en la misma sección de la intersección a la
+vez (llamemos a esa situación \emph{accidente} o \emph{choque})
+\item No existe el rebase, los autos no invaden el carril izquierdo.
+\item No debes permitir que se lleve a la inanición: Aunque haya tráfico
+constante en un sentido, un auto que llegue desde otro debe poder
+cruzar.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2b79d88}]{Refinamiento 1}
+\begin{center}
+Tal vez elegiste bloquear la intersección completa cuando un auto
+llega.
+\end{center}
+
+\begin{itemize}
+\item ¿Por qué es ineficiente?
+\item ¿Cómo podrías mejorar el rendimiento (reducir la inanición) y
+mantener la garantía de no-choques?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8710bde}]{Refinamiento 2}
+\begin{center}
+¿Cómo ajustarías el código para modelar también los giros?
+\end{center}
+\begin{itemize}
+\item Un auto podría girar a la derecha (y emplear sólo un cuadrante)
+\item Podría seguir de frente (y emplear dos cuadrantes)
+\item Podría girar a la izquierda (y emplear tres cuadrantes).
+\item Ojo: ¿Puedes evitar los bloqueos mutuos?
+\end{itemize}
+\end{frame}
+
+\section{El elevador}
+\label{sec:org677cf76}
+\begin{frame}[label={sec:org3fd955c}]{Planteamiento}
+\begin{itemize}
+\item El elevador de la Facultad se descompone demasiado, porque sus
+usuarios no respetan los límites.
+\begin{itemize}
+\item Te toca evitar este desgaste (y el peligro que conlleva).
+\end{itemize}
+\item Implementa el elevador como un hilo, y a cada persona que quiere
+usarlo como otro hilo.
+\item El elevador de la Facultad de Ingeniería da servicio a cinco
+pisos.
+\begin{itemize}
+\item Un usuario puede llamarlo en cualquiera de ellos
+\item Puede querer ir a cualquiera otro de ellos.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5edae39}]{Reglas}
+\begin{itemize}
+\item El elevador tiene capacidad para cinco pasajeros
+\begin{itemize}
+\item Recuerden que el peso canónico de todo ingeniero (estudiante o
+docente) es constante.
+\end{itemize}
+\item Para ir del piso \(x\) a \(y\), el elevador tiene que cruzar todos los
+pisos intermedios
+\item Los usuarios prefieren esperar dentro del elevador que fuera de él
+\begin{itemize}
+\item Si el elevador va subiendo y pasa por el piso \(x\), donde está \(A\)
+esperando para bajar, \(A\) aborda al elevador (no espera a que vaya
+en la dirección correcta).
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org19f0040}]{Refinamiento}
+\begin{itemize}
+\item Evita la inanición.
+\begin{itemize}
+\item ¿Cómo puedes asegurarte de que una serie de alumnos que van entre
+dos pisos no van a monopolizar al elevador ante otro usuario que
+va para otro piso?
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Los alumnos y el asesor}
+\label{sec:org5ca146a}
+\begin{frame}[label={sec:org671c791}]{Planteamiento}
+\vfill
+Un profesor de la facultad asesora a varios estudiantes, y estamos en
+su horario de atención.
+\vfill
+Modelar la interacción durante este horario de modo que la espera
+(para todos) sea tan corta como sea posible.
+\end{frame}
+
+\begin{frame}[label={sec:orgc37392f}]{Reglas}
+\begin{itemize}
+\item Un profesor tiene \(x\) sillas en su cubículo
+\begin{itemize}
+\item Cuando no hay alumnos que atender, las sillas sirven como sofá, y
+el profesor se acuesta a dormir la siesta.
+\end{itemize}
+\item Los alumnos pueden tocar a su puerta en cualquier momento, pero no
+pueden entrar más de \(x\) alumnos
+\item Para evitar confundir al profesor, sólo un alumno puede presentar su
+duda (y esperar a su respuesta) al mismo tiempo.
+\begin{itemize}
+\item Los demás alumnos sentados deben esperar pacientemente su turno.
+\item Cada alumno puede preguntar desde 1 y hasta \(y\) preguntas
+(permitiendo que los demás alumnos pregunten entre una y otra)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{El servidor Web}
+\label{sec:orgffff576}
+\begin{frame}[label={sec:org350e633}]{Planteamiento}
+\begin{center}
+Al presentar los modelos de programación con hilos presentamos al
+\emph{Jefe-trabajador}:
+
+\begin{center}
+\includegraphics[height=0.3\textheight]{../img/dot/jefe_trabajador.png}
+\end{center}
+
+Dijimos que así operan muchos servidores de red, como el servidor
+Apache.
+
+¿Cómo modelarías la interacción entre jefe y trabajadores, empleando
+mecanismos de sincronización?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org948bbad}]{Reglas}
+\begin{itemize}
+\item Al inicializar, el proceso jefe lanza \(k\) hilos trabajadores
+\begin{itemize}
+\item Los trabajadores que no tienen nada que hacer se van a dormir.
+\end{itemize}
+\item El proceso jefe recibe una conexión de red, y elige a cualquiera de
+los trabajadores para que la atienda
+\begin{itemize}
+\item Se la asigna a un trabajador y lo despierta
+\end{itemize}
+\item El jefe va a buscar mantener siempre a \(k\) hilos disponibles y
+listos para atender las solicitudes que van llegando.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org71ed05e}]{Refinamiento}
+\begin{itemize}
+\item Seguimiento del sistema: ¿Cómo implementarías lo necesario para
+mantener \emph{información de contabilidad}?
+\begin{itemize}
+\item Cada hilo debe notificar antes de terminar su ejecución,
+entregando información de su rendimiento
+\item Por ejemplo, qué página fue solicitada
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\section{El cruce del río}
+\label{sec:org346bdba}
+\begin{frame}[label={sec:orged8c50a}]{Planteamiento}
+\begin{itemize}
+\item Para llegar a un encuentro de desarrolladores de sistemas
+operativos, hace falta cruzar un río en balsa.
+\item Los desarrolladores podrían pelearse entre sí, hay que cuidar que
+vayan con un balance adecuado
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org29911b1}]{Reglas}
+\begin{itemize}
+\item En la balsa caben cuatro (y sólo cuatro) personas
+\begin{itemize}
+\item La balsa es demasiado ligera, y con menos de cuatro puede volcar.
+\end{itemize}
+\item Al encuentro están invitados \emph{hackers} (desarrolladores de Linux) y
+\emph{serfs} (desarrolladores de Microsoft).
+\begin{itemize}
+\item Para evitar peleas, debe mantenerse un buen balance: No debes
+permitir que aborden tres \emph{hackers} y un \emph{serf}, o tres \emph{serfs} y
+un \emph{hacker}. Pueden subir cuatro del mismo \emph{bando}, o dos y dos.
+\end{itemize}
+\item Hay sólo una balsa.
+\item No se preocupen por devolver la balsa (está programada para volver
+sola)
+\end{itemize}
+\end{frame}
+
+\section{Santa Claus}
+\label{sec:orga931b56}
+\begin{frame}[label={sec:org67da581}]{Planteamiento}
+\begin{itemize}
+\item Santa Claus duerme en el Polo Norte mientras sus elfos trabajan
+frenéticamente en la construcción de millones de nuevos juguetes
+\begin{itemize}
+\item A veces se topan con un problema — Pueden pedir ayuda a Santa
+Claus, pero sólo de tres en tres.
+\end{itemize}
+\item Sus nueve renos pasan todo el año de vacaciones en las playas del
+Caribe
+\begin{itemize}
+\item Santa debe despertar a tiempo para iniciar su viaje anual
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb98f88c}]{Reglas}
+\begin{itemize}
+\item Si los nueve renos están de vuelta, es hora de despertar a Santa
+Claus para que inicie su recorrido.
+\item Si los elfos tienen problemas construyendo algún juguete, le piden
+ayuda a Santa Claus
+\begin{itemize}
+\item Pero para no darle demasiada lata, lo hacen sólo cuando hay tres
+elfos que tienen un problema. Mientras tanto, lo dejan dormir.
+\item Puede haber cualquier cantidad de elfos.
+\end{itemize}
+\end{itemize}
+\end{frame}
+\end{document}

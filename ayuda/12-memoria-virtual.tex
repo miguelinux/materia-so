@@ -1,0 +1,1249 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Administración de memoria: Memoria virtual}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Administración de memoria: Memoria virtual},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Concepto}
+\label{sec:org9728bc5}
+
+\begin{frame}[label={sec:org48a01a6}]{Disociar por completo memoria física y lógica}
+\begin{itemize}
+\item El primer gran paso hacia la memoria virtual lo cubrimos al hablar
+de paginación
+\begin{itemize}
+\item Cada proceso tiene una \emph{vista lógica} de su memoria
+\item Cada proceso se \emph{mapea} a la memoria física
+\item Pero es exclusivo, distinto del de los demás procesos
+\end{itemize}
+\item Ahora cada proceso tiene un espacio de direccionamiento exclusivo y
+muy grande
+\begin{itemize}
+\item Pero omitimos cómo es que podemos ofrecer más memoria que la
+físicamente disponible
+\end{itemize}
+\item Aquí entra en juego la \emph{memoria virtual}
+\begin{itemize}
+\item La memoria física es sólo una \emph{proyección parcial} de la memoria
+lógica, potencialmente mucho mayor
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge3bc15b}]{Retomando el intercambio}
+\begin{itemize}
+\item Vimos el intercambio en primer término al \emph{intercambio} (swap) al
+hablar de memoria particionada
+\begin{itemize}
+\item Espacio de memoria completo de un proceso
+\end{itemize}
+\item Mejora cuando hablamos de segmentación
+\begin{itemize}
+\item Intercambio parcial; segmentos no utilizados.
+\item El proceso puede continuar con porciones \emph{congeladas} a
+almacenamiento secundario
+\end{itemize}
+\item Con la memoria virtual, el intercambio se realiza \emph{por página}
+\begin{itemize}
+\item Mucho más rápido que por bloques tan grandes como un segmento
+\item Completamente transparente al proceso
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org49c2302}]{Esquema general empleando memoria virtual}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.65\textheight]{../img/dot/esquema_gral_mem_virtual.png}
+\caption{Esquema general de la memoria, incorporando espacio en almacenamiento secundario, representando la memoria virtual}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org58180d4}]{Pequeño cambio de nomenclatura}
+\begin{itemize}
+\item El \emph{intercambio} (swap) deja de ser un \emph{último recurso}
+\begin{itemize}
+\item Pasa a ser un elemento más en la jerarquía de memoria
+\end{itemize}
+\item El mecanismo para intercambiar páginas al disco ya no es un
+mecanismo aparte
+\begin{itemize}
+\item Ya no hablamos del \emph{intercambiador} (\emph{swapper})
+\item Sino que del \emph{paginador}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org313f7b1}]{Transparencia al proceso}
+\begin{itemize}
+\item Es importante recalcar que cuando hablamos de memoria virtual, ésta
+se mantiene \emph{transparente al proceso}
+\item El proceso puede dedicarse a cumplir su tarea, el sistema operativo
+\emph{paginará} la memoria según haga falta
+\item Es \emph{posible} hacer ciertas indicaciones de preferencia, pero en
+general no es el caso
+\end{itemize}
+\end{frame}
+
+\section{Paginación sobre demanda}
+\label{sec:org1dfbb89}
+
+\begin{frame}[label={sec:org1392741}]{Deja dormir al \emph{código durmiente}}
+\begin{itemize}
+\item En el transcurso de la vida de un proceso, porciones importantes de
+su memoria se mantienen \emph{durmientes} — Código que sólo se emplea
+eventualmente
+\begin{itemize}
+\item Respuesta a situaciones de excepción
+\item Exportación de un documento a determinado formato
+\item Verificación de sanidad al cerrar el programa
+\item Estructuras inicializadas con espacio para permitir que crezcan
+\item \ldots{}
+\end{itemize}
+\item Las páginas en que están dichos datos no son necesarias durante la
+ejecución normal
+\begin{itemize}
+\item El paginador puede \emph{posponer} su carga hasta cuando sean necesarias
+\item Si es que alguna vez son requeridas
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2d5f48e}]{Entonces, ¿sobre demanda?}
+\begin{itemize}
+\item Todo el código que ejecute o referencie directamente el procesador
+\emph{tiene} que estar en memoria principal
+\begin{itemize}
+\item Pero no tiene que estarlo \emph{antes} de ser referenciado
+\item Para ejecutar un proceso, sólo requerimos cargar la porción
+necesaria para \emph{comenzar} la ejecución
+\end{itemize}
+\item Podemos emplear a un paginador \emph{flojo}
+\begin{itemize}
+\item Sólo ir cargando a memoria las páginas conforme van a ser
+utilizadas
+\item Las páginas que no sean requeridas nunca serán cargadas a memoria
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7b50a14}]{¿Paginador \emph{flojo}?}
+\begin{center}
+\emph{Flojo}: Concepto usado en diversas áreas del cómputo
+\end{center}
+\begin{description}
+\item[{Flojo (\emph{Lazy})}] Busca hacer el trabajo mínimo en un principio, y
+diferir para más tarde tanto como sea posible
+\item[{Ansioso (\emph{Eager})}] Busca realizar todo el trabajo que sea
+posible \emph{desde un principio}
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org9d2d611}]{¿Cómo hacemos \emph{flojo} al paginador?}
+\begin{itemize}
+\item Estructura de MMU muy parecida a la del TLB
+\item La \emph{tabla de páginas} incluirá un \emph{bit de validez}
+\begin{itemize}
+\item Indica si la página está presente o no en memoria
+\item Si no está presente, causa un \emph{fallo de página}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8636420}]{Respuesta a un fallo de página}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.75\textheight]{../img/dot/respuesta_a_fallo_de_pagina.png}
+\caption{Pasos que atraviesa la respuesta a un fallo de página}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org22713b5}]{Pasos para atender a un fallo de página}
+\begin{enumerate}
+\item Verificar en la tabla de paginación (TP): ¿Esta página ya fue
+asignada al proceso? (¿es válida?)
+\item Si no es válida, se termina el proceso
+\item Buscar un marco disponible
+\begin{itemize}
+\item P.ej. en una tabla de asignación de marcos
+\end{itemize}
+\item Solicita el al disco la lectura de la página hacia el marco especificado
+\begin{itemize}
+\item Continúa ejecutando otros procesos
+\end{itemize}
+\item Cuando finaliza la lectura, actualiza TP y TLB
+para indicar que la tabla está en memoria
+\item Termina la suspensión del proceso.
+\begin{itemize}
+\item Continúa con la instrucción que desencadenó el fallo.
+\item El proceso continúa como si la página \emph{siempre hubiera estado} en
+memoria
+\end{itemize}
+\end{enumerate}
+\end{frame}
+
+\begin{frame}[label={sec:org8c23e62}]{Paginación \emph{puramente} sobre demanda}
+\begin{center}
+Llevar este proceso al extremo: Sistema de \emph{paginación puramente sobre
+demanda} (\emph{Pure demand paging})
+\end{center}
+\begin{itemize}
+\item Al iniciar la ejecución de un proceso, lo hace \emph{sin ninguna página
+en memoria}
+\begin{itemize}
+\item El registro de siguiente instrucción apunta a una dirección que no
+ha sido cargada
+\end{itemize}
+\item De inmediato se produce un fallo de página
+\begin{itemize}
+\item El sistema operativo responde cargando esta primer página
+\end{itemize}
+\item Conforme avanza el flujo del programa, el proceso va ocupando el
+espacio real que empleará
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgbdd0eae}]{Efecto de la paginación sobre demanda}
+\begin{itemize}
+\item Al no cargarse todo el espacio de un proceso, puede iniciar su
+ejecución más rápido
+\item Al no requerir tener en la memoria física a los procesos completos,
+puede haber más procesos en memoria de los que cabrían antes
+\begin{itemize}
+\item Aumentando el \emph{grado de multiprogramación}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org71982d8}]{Midiendo el impacto en la ejecución}
+\begin{itemize}
+\item El impacto en la ejecución de un proceso puede ser muy grande
+\item Un acceso a disco es varios miles de veces más lento que un acceso a
+memoria
+\item Podemos calcular el tiempo de acceso efectivo (\(t_e\)) a  partir de
+la probabilidad de que en un proceso se presente un fallo de página
+(\(0 \le p \le 1\))
+\item Conociendo el tiempo de acceso a memoria (\(t_a\)) y el tiempo que
+toma atender a un fallo de página (\(t_f\)):
+\end{itemize}
+
+\begin{center}
+\(t_e = (1-p)t_a + pt_f\)
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org209f3d9}]{Resolviendo con valores actuales}
+\begin{itemize}
+\item \(t_a\) ronda entre los 10 y 200ns
+\item \(t_f\) está cerca de los 8ms
+\begin{itemize}
+\item Latencia del disco duro: 3ms
+\item Tiempo de posicionamiento de cabeza: 5ms
+\item Tiempo de transferencia: 0.05ms
+\end{itemize}
+\item Si sólo uno de cada mil accesos a memoria ocasiona un fallo
+(\(p=\frac{1}{1000}\)):
+\end{itemize}
+\begin{center}
+\(t_e = (1-\frac{1}{1000}) \times 200ns + \frac{1}{1000} \times 8,000,000ns\)
+
+\(t_e = 199.8ns + 8000ns = 8199.8ns\)
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org67ce158}]{Ahora sí: El impacto de la paginación sobre demanda}
+\begin{itemize}
+\item Esto es, el tiempo efectivo de acceso a memoria es \emph{40 veces} más
+lento que si no empleáramos paginación sobre demanda
+\item Podríamos mantener la penalización por degradación por debajo del
+10\% del tiempo original
+\item Pero para que \(t_e \le 220\), tendríamos que reducir a \(p \le
+  \frac{1}{399,990}\)
+\end{itemize}
+\pause
+\begin{itemize}
+\item No olviden: No (necesariamente) es tiempo muerto
+\begin{itemize}
+\item Multiprogramación: Mientras un proceso espera a que se resuelva su
+fallo de página, otros pueden continuar ejecutando
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org14e161a}]{Acomodo de las páginas en disco}
+\begin{itemize}
+\item El cálculo presentado asume que el acomodo de las páginas en disco
+es  óptimo
+\item Si hay que agregar el espacio que una página ocupa en un \emph{sistema de
+archivos}, \(t_f\) fácilmente aumenta
+\begin{itemize}
+\item Navegar estructuras de directorio
+\item Posible fragmentación en espacio de archivos \rarrow la memoria va
+quedando esparcida por todo el disco
+\item Mayores movimientos de la cabeza lectora
+\item Problema prevalente en los sistemas tipo Windows
+\end{itemize}
+\item Respuesta: \emph{Partición de intercambio}, dedicada 100\% a la paginación
+\begin{itemize}
+\item Mecanismo empleado por casi todos los sistemas Unix
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Reemplazo de páginas}
+\label{sec:org525cb8d}
+\begin{frame}[label={sec:org2843329}]{Manteniendo el sobre-compromiso}
+\begin{itemize}
+\item Cuando \emph{sobre-comprometemos} memoria, los procesos en ejecución
+pueden terminar requiriendo que se carguen más páginas de las que
+caben en la memoria física
+\item Mantenemos el objetivo del sistema operativo: \emph{Otorgar a los
+usuarios la ilusión de una computadora dedicada a sus procesos}
+\item No sería aceptable terminar la ejecución de un proceso ya aceptado
+\begin{itemize}
+\item Mucho menos si ya fueron aprobados sus requisitos y nos quedamos
+sin recurso
+\end{itemize}
+\item \rarrow Tenemos que llevar a cabo un \emph{reemplazo de páginas}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgee42ebb}]{Importancia del reemplazo de páginas}
+\begin{itemize}
+\item Parte fundamental de la paginación sobre demanda
+\item La pieza que posibilita una \emph{verdadera separación} entre memoria
+lógica y física
+\item Mecanismo que permite \emph{liberar} alguno de los marcos actualmente
+ocupado
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc304c45}]{Mecanismo para liberar un marco ocupado}
+\begin{itemize}
+\item Cuando todos los marcos están ocupados (o se cruza el umbral
+determinado), un algoritmo designa a una \emph{página víctima} para su
+liberación
+\begin{itemize}
+\item Veremos más adelante algunos algoritmos para esto
+\end{itemize}
+\item El paginador graba a disco los contenidos de esta página y la marca
+como libre
+\begin{itemize}
+\item Actualizando el PCB y TLB del proceso al cual pertenece
+\end{itemize}
+\item Puede continuar la carga de la página requerida
+\item \emph{¡Ojo!} Esto significa que \emph{se duplica} el tiempo de transferencia
+en caso de fallo de página (\(t_f\))
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3297e38}]{Manteniendo a \(t_f\) en su lugar}
+\begin{itemize}
+\item Con apoyo del MMU podemos reducir la probabilidad de esta
+duplicación en \(t_f\)
+\item Agregamos un \emph{bit de modificación} o \emph{bit de página sucia} a la
+tabla de páginas
+\begin{itemize}
+\item Apagado cuando la página se carga a memoria
+\item Se enciende cuando se realiza un acceso de escritura a esta página
+\end{itemize}
+\item Al elegir una página víctima, si su \emph{bit de página sucia} está
+encendido, es necesario grabarla a disco
+\begin{itemize}
+\item Pero si está apagado, basta actualizar las tablas del proceso
+afectado
+\item Ahorra la mitad del tiempo de transferencia
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org1e90f14}]{¿Cómo elegir una página víctima?}
+\begin{itemize}
+\item Para elegir una víctima para paginarla al disco empleamos un
+\emph{algoritmo de reemplazo de páginas}
+\item Buscamos una característica: Para un patrón de accesos dado, obtener
+el \emph{menor número} de fallos de página
+\begin{itemize}
+\item Diferentes patrones de acceso generan diferentes resultados para
+cada algoritmo
+\item Nos referiremos a estos patrones de acceso como \emph{cadena de
+referencia}
+\end{itemize}
+\end{itemize}
+\begin{center}
+Para los ejemplos presentados a continuación, nos basaremos en los
+presentados en \emph{Operating Systems Concepts Essentials} (Silberschatz,
+Galvin y Gagné, 2011)
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgb027d73}]{Eligiendo una cadena de referencia}
+\begin{itemize}
+\item La cadena de referencia debe representar un patrón típico (para la
+carga que deseemos analizar) de accesos a memoria
+\item Muchas veces son tomados de un volcado/trazado de ejecución en un
+sistema real
+\begin{itemize}
+\item El conjunto resultante puede ser enorme
+\item Simplificación: No nos interesa el acceso independiente a cada
+\emph{dirección} de memoria, sino que a cada \emph{página}
+\item Varios accesos consecutivos a la misma página no tienen efecto en
+el análisis
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc806f9e}]{Y el reemplazo\ldots{} ¿en dónde?}
+\begin{itemize}
+\item Requerimos de un segundo parámetro
+\item Para analizar un algoritmo con una cadena de referencia, tenemos que
+saber \emph{cuántos marcos} tiene nuestra computadora hipotética
+\begin{itemize}
+\item Lo que buscamos es la \emph{cantidad de fallos de página}
+\item Depende directamente de los marcos disponibles
+\item Y del tamaño (en páginas de memoria) de nuestro proceso
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge336005}]{Casos límite respecto a los marcos disponibles}
+Por ejemplo, a partir de la cadena de referencia:
+\begin{quote}
+1, 4, 3, 4, 1, 2, 4, 2, 1, 3, 1, 4
+\end{quote}
+\begin{itemize}
+\item En una computadora con \(\ge 4\) marcos, sólo se producirían cuatro fallos
+\begin{itemize}
+\item Los necesarios para la \emph{carga inicial}
+\end{itemize}
+\item Extremo opuesto: Con un sólo marco, tendríamos 12 fallos
+\begin{itemize}
+\item Cada página tendría que cargarse siempre desde disco
+\end{itemize}
+\item Casos que se pueden estudiar: 2 o 3 marcos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0a99475}]{Datos base para los algoritmos}
+\begin{itemize}
+\item A continuación veremos varios algoritmos de reemplazo de páginas
+\item Para el análisis, asumiremos una memoria con 3 marcos
+\item Y la siguiente cadena de referencia:
+\end{itemize}
+\begin{quote}
+7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2, 1, 2, 0, 1, 7, 0, 1
+\end{quote}
+\end{frame}
+
+\begin{frame}[label={sec:org1ce2e60}]{Primero en entrar, primero en salir (FIFO) (1)}
+\begin{itemize}
+\item Nuevamente, el algoritmo más simple y de obvia implementación
+\item Al cargar una página, se toma nota de cuándo fue cargada
+\item Cuando llegue el momento de reemplazar una página vieja, se elige
+la que se haya cargado hace más tiempo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd1d651e}]{Primero en entrar, primero en salir (FIFO) (2)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{../img/ditaa/reemplazo_pag_fifo.png}
+\caption{Algoritmo FIFO de reemplazo de páginas: 15 fallos}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org4c04d04}]{Primero en entrar, primero en salir (FIFO) (3)}
+\begin{itemize}
+\item Típicamente programado empleando una lista ligada circular
+\begin{itemize}
+\item Cada elemento que va recibiendo se agrega como el último elemento
+\item Tras agregarlo, se "empuja" al apuntador para convertirlo en la
+cabeza
+\end{itemize}
+\item Desventaja: No toma en cuenta la historia de las últimas
+solicitudes
+\begin{itemize}
+\item La cantidad de patrones de uso que le pueden causar un bajo
+desempeño es alto
+\item Todas las páginas tienen la misma probabilidad de ser
+reemplazadas, independientemente de su frecuencia de uso
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4bb2693}]{Anomalía de Belady}
+\begin{itemize}
+\item En general, asumimos que a mayor cantidad de marcos de memoria
+disponibles, menos fallos de página se van a presentar
+\item La \emph{Anomalía de Belady} ocurre cuando un incremento en el número de
+marcos disponibles lleva a \emph{más} fallos de página
+\begin{itemize}
+\item Depende del algoritmo y de la secuencia de la cadena de
+referencia
+\end{itemize}
+\item FIFO es vulnerable a la anomalía de Belady
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3654b76}]{Anomalía de Belady: Expectativas de comportamiento}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.6\textheight]{../img/gnuplot/expectativa_fallas_contra_marcos.png}
+\caption{Relación ideal entre el número de marcos y la cantidad de fallos de página}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgcaeda9b}]{Anomalía de Belady: Comportamiento de FIFO}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.6\textheight]{../img/gnuplot/anomalia_belady.png}
+\caption{El algoritmo FIFO presenta la anomalía de Belady con la cadena de referencia 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org7b289bb}]{Algoritmo óptimo (OPT) o mínimo (MIN) (1)}
+\begin{itemize}
+\item Interes casi puramente téórico
+\item Elegimos como página víctima a aquella que \emph{no vaya a ser
+utilizada} por un tiempo máximo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org28cb56e}]{Algoritmo óptimo (OPT) o mínimo (MIN) (2)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{../img/ditaa/reemplazo_pag_opt.png}
+\caption{Algoritmo óptimo de reemplazo de páginas (OPT): 9 fallos}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org8da8484}]{Algoritmo óptimo (OPT) o mínimo (MIN) (3)}
+\begin{itemize}
+\item Óptimo demostrado, pero no aplicable
+\item Requiere conocimiento a priori de las necesidades del sistema
+\begin{itemize}
+\item Si es de por sí impracticable en los despachadores, lo es mucho
+mas al hablar de un área tan dinámica como la memoria
+\item Recuerden: Millones de accesos por segundo
+\end{itemize}
+\item Principal utilidad: Brinda una cota mínima
+\begin{itemize}
+\item Podemos ver qué tan cercano resulta otro algoritmo respecto al
+caso óptimo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgcb08f99}]{Menos recientemente utilizado (LRU) (1)}
+\begin{itemize}
+\item Lo hemos mencionado ya en varios puntos de la administración de memoria
+\item Busca acercarse a OPT \emph{prediciendo} cuándo será el próximo uso de
+cada una de las páginas
+\begin{itemize}
+\item Basado en su historia reciente
+\end{itemize}
+\item Elige la página que \emph{no ha sido empleada} desde hace más tiempo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb709175}]{Menos recientemente utilizado (LRU) (2)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.9\textwidth]{../img/ditaa/reemplazo_pag_lru.png}
+\caption{Algoritmo reemplazo de páginas menos recientemente utilizadas (LRU): 11 fallos}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgc8829f8}]{Menos recientemente utilizado (LRU) (3)}
+\begin{itemize}
+\item Para nuestra cadena de referencia, resulta en el punto medio entre
+OPT y FIFO
+\item Para una cadena \(S\) y su \emph{cadena espejo} \(R^S\), \(OPT(S) = LRU(R^S)\)
+(y viceversa)
+\item Está demostrado que LRU y OPT están libres de la anomalía de Belady
+\begin{itemize}
+\item Para \(n\) marcos, las páginas que están en memoria son un
+subconjunto estricto de las que estarían con \(n+1\) marcos.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd754142}]{Implementación ejemplo de LRU (1)}
+\begin{itemize}
+\item Se agrega un contador a \emph{cada uno} de los marcos
+\begin{itemize}
+\item El contador se incrementa siempre que se hace referencia a una
+página
+\end{itemize}
+\item Se elige como víctima a la página con el contrador más bajo
+\begin{itemize}
+\item Esto es, a la que hace más tiempo no haya sido actualizada
+\end{itemize}
+\item Desventaja: Con muchas páginas, se tiene que recorrer \emph{la lista
+completa} para encontrar la más \emph{envejecida}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc70b79b}]{Implementación ejemplo de LRU (2)}
+\begin{itemize}
+\item La lista de marcos es una lista doblemente ligada
+\item Esta lista es tratada como una lista y como un stack
+\begin{itemize}
+\item Cuando se hace referencia a una página, se mueve a la cabeza
+(arriba) del stack — Peor caso: 6 operaciones
+\item Para elegir a una página víctima, se toma la de \emph{abajo} del stack
+(tiempo constante)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgffe59eb}]{Más / menos frecuentemente utilizado (MFU / LFU) (1)}
+\begin{itemize}
+\item Dos algoritmos contrapuestos, basados (como LRU) en mantener un
+contador
+\begin{itemize}
+\item Miden la \emph{cantidad} de referencias que se han hecho a cada página
+\end{itemize}
+\item Lógica base:
+\begin{description}
+\item[{MFU}] Si una página fue empleada muchas veces, probablemente va a
+ser empleada muchas veces más
+\item[{LFU}] Si una página casi no ha sido empleada, probablemente
+recién fue cargada, y será empleada en el futuro cercano
+\end{description}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf15eb6d}]{Más / menos frecuentemente utilizado (MFU / LFU) (2)}
+\begin{itemize}
+\item La complejidad de estos algoritmos es tan alta como LRU, y su
+rendimiento es menos cercano a OPT
+\begin{itemize}
+\item Casi no son empleados
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge3889e6}]{Aproximaciones a LRU}
+\begin{itemize}
+\item ¿Principal debilidad de LRU? Su implementación requiere apoyo en
+hardware mucho más complejo que FIFO
+\item Hay varios mecanismos que buscan \emph{aproximar} el comportamiento de
+LRU
+\begin{itemize}
+\item Empleando información menos detallada
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8fdb433}]{Bit de referencia}
+\begin{itemize}
+\item Aproximación bastante común
+\item Todas las entradas de la tabla de páginas tienen un \emph{bit de
+referencia}, inicialmente apagado
+\begin{itemize}
+\item Cada vez que se referencia a un marco, se enciende su bit de
+referencia
+\item El sistema \emph{reinicia} periódicamente a \emph{todos} los bits de
+referencia, apagándolos
+\end{itemize}
+\item Al presentarse un fallo de página, se elige por FIFO de entre el
+subconjunto con el bit apagado
+\begin{itemize}
+\item Esto es, entre las páginas que no fueron empleadas en el periodo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org314f289}]{Bits adicionales (\emph{columna}) de referencia}
+\begin{itemize}
+\item Mecanismo derivado del anterior, dando más granularidad
+\item Se maneja una \emph{columna} de referencia, de varios bits de ancho
+\begin{itemize}
+\item Periódicamente, en vez de reiniciar a 0, el valor de todas las
+entradas se \emph{recorre} a la derecha, descartando el bit más bajo
+\item El acceso a un marco hace que se encienda su bit más alto
+\end{itemize}
+\item Ante un fallo de página, se elige entre los marcos con valor de
+referencia más bajo
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4938150}]{Segunda oportunidad (o \emph{reloj})}
+\begin{itemize}
+\item Maneja un bit de referencia y un recorrido tipo FIFO
+\item El algoritmo avanza linealmente sobre la lista ligada circular
+\item Hay eventos que encienden el bit, y eventos que lo apagan:
+\begin{itemize}
+\item Una referencia a un marco enciende su bit de referencia
+\item Si elige a un marco que tiene encendido el bit de referencia, lo
+apaga y avanza una posición (dándole una \emph{segunda oportunidad})
+\item Si elige a un marco que tiene apagado el bit de referencia, lo
+designa como página víctima
+\end{itemize}
+\item Se le llama \emph{de reloj} porque puede verse como una manecilla que
+avanza sobre la lista de marcos
+\begin{itemize}
+\item Hasta encontrar uno con el bit de referencia apagado
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2e556d8}]{Segunda oportunidad mejorada (1)}
+\begin{itemize}
+\item Si agregamos al bit de referencia un bit de \emph{modificación}, nos
+mayor expresividad, y puede ayudar a elegir a una página víctima
+\emph{más barata}. En órden de preferencia:
+\begin{description}
+\item[{(0,0)}] El marco no ha sido utilizado ni modificado. Buen
+candidato.
+\item[{(0,1)}] Sin uso reciente, pero está \emph{sucio}. Hay que escribirlo a
+disco.
+\item[{(1,0)}] Está \emph{limpio}, pero tiene uso reciente, y es probable que
+se vuelva a usar pronto
+\item[{(1,1)}] Empleado recientemente y \emph{sucio}. Habría que grabarlo a
+disco, y tal vez vuelva a requerirse pronto. Hay que
+evitar reemplazarlo.
+\end{description}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org13ea82c}]{Segunda oportunidad mejorada (2)}
+\begin{itemize}
+\item Emplea una lógica como la de \emph{segunda oportunidad}, pero
+considerando el costo de E/S
+\item Puede requerir dar hasta cuatro \emph{vueltas} para elegir a la página
+víctima
+\begin{itemize}
+\item Aunque cada vuelta es más corta
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6d401bc}]{Algoritmos con manejo de buffers}
+\begin{itemize}
+\item De uso cada vez más frecuente
+\item No esperan a que el sistema requiera reemplazar un marco, buscan
+\emph{siempre tener espacio disponible}
+\begin{itemize}
+\item Algoritmos \emph{ansiosos}, no \emph{flojos}
+\item Operan basados en \emph{umbrales} aceptables/deseables
+\end{itemize}
+\item Conforme la carga lo permite, el SO busca las páginas sucias más
+proclives a ser paginadas
+\begin{itemize}
+\item Va copiándolas a disco y marcándolas como limpias
+\end{itemize}
+\item Cuando tenga que traer una página de disco, siempre habrá dónde
+ubicarla sin tener que hacer una transferencia
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgdac43d3}]{Ejemplo: Tres sistemas Linux (1)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/munin_sistema_minimo.png}
+\caption{Manejo de memoria (24 horas) en un sistema embebido (16MB RAM)}
+\end{figure}
+\end{frame}
+
+
+\begin{frame}[label={sec:org852bf0b}]{Ejemplo: Tres sistemas Linux (2)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/munin_servidor_medio.png}
+\caption{Manejo de memoria (24 horas) en un servidor medio (8GB RAM)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org1306da4}]{Ejemplo: Tres sistemas Linux (3)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/munin_servidor_grande.png}
+\caption{Manejo de memoria (24 horas) en un servidor grande (32GB RAM)}
+\end{figure}
+\end{frame}
+
+\section{Asignación de marcos}
+\label{sec:orgd68d77a}
+\begin{frame}[label={sec:orge514aa5}]{Viendo el lado opuesto del problema}
+\begin{itemize}
+\item Vimos ya cómo \emph{retirar} marcos asignados
+\item ¿Cómo conviene \emph{asignar} los marcos a los procesos?
+\item Definamos algunos parámetros para nuestros ejemplos
+\begin{itemize}
+\item Un sistema con 1024KB de memoria física
+\item 256 páginas de 4KB cada una
+\item El sistema operativo ocupa 248KB (62 páginas); 194 páginas para
+los procesos a ejecutar
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgec16249}]{Vuelta a la paginación puramente sobre demanda}
+\begin{itemize}
+\item En un esquema de paginación puramente sobre demanda, cada fallo de
+página que se va generando lleva a que se asigne el marco
+correspondiente
+\item Se van asignando los marcos conforme son requeridos, hasta que hay
+194 páginas ocupadas por procesos
+\begin{itemize}
+\item Entonces, entran en escena los algoritmos de \emph{reemplazo de
+páginas} que ya vimos
+\item Claro está, cuando un proceso termina, sus marcos vuelven a la
+lista de marcos libres
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org377ea1e}]{Puramente sobre demanda: \emph{Demasiado flojo}}
+\begin{itemize}
+\item El esquema de paginación \emph{puramente} sobre demanda puede resultar
+\emph{demasiado flojo}
+\item Ser un poco \emph{más ansioso} aseguraría un mejor rendimiento
+\item Conviene determinar un \emph{mínimo} utilizable de marcos
+\begin{itemize}
+\item Si asignamos por debajo del mínimo, sufre el rendimiento
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org29a84e7},fragile]{Mínimo de marcos: Arquitectura y direccionamiento}
+ \begin{itemize}
+\item Hasta ahora hemos simplificado asumiendo que cada instrucción puede
+generar sólo un fallo de página
+\item Independientemente de la arquitectura, cada instrucción puede
+desencadenar \emph{varias} solicitudes
+\begin{itemize}
+\item Una solicitud, la lectura de la siguiente dirección a ejecutar
+(¡recuerden: von Neumann!)
+\item Otra, la dirección de memoria referida
+\item Por ejemplo, si el flujo \emph{brinca} a \texttt{0x00A2C8}, y esta
+instrucción es \texttt{load 0x043F00}, para satisfacerla requerimos dos
+páginas: \texttt{0x00A} y \texttt{0x043}
+\item \rarrow Requerimos un mínimo de dos páginas
+\end{itemize}
+\item Pero\ldots{} ¿Y las \emph{referencias indirectas}?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org14f6fff},fragile]{Mínimo de marcos: Referencias indirectas}
+ \begin{itemize}
+\item \emph{Casi} todas las arquitecturas permiten hacer \emph{referencias
+indirectas} a memoria
+\item Una instrucción de acceso a memoria (\texttt{load}, \texttt{store}) especifica
+una dirección de memoria
+\item Y \emph{esta dirección} guarda la ubicación de memoria
+\item Por ejemplo, \texttt{0x043F00} indica la carga de \texttt{0x010F80}
+\begin{itemize}
+\item \rarrow Satisfacer al \texttt{load 0x043F00} requerirá entonces tres
+páginas: \texttt{0x00A}, \texttt{0x043} y \texttt{0x010}
+\end{itemize}
+\item \ldots{}Y algunas arquitecturas (principalmente antiguas) permitían
+niveles ilimitados de indirección
+\begin{itemize}
+\item Por ejemplo, por medio de un \emph{bit de indirección}
+\item En dado caso, es imposible \emph{asegurar} un límite máximo \rarrow Es
+común que el MMU haga un \emph{conteo de referencias} para evitar caer
+en un ciclo sin fin
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge4447db},fragile]{Instrucciones con operandos en memoria}
+ \begin{itemize}
+\item Las arquitecturas RISC introdujeron requisitos de regularidad que
+incluyen el que la aritmética opere exclusivamente sobre los
+registros del procesador
+\item Las arquitecturas más antiguas permiten que los operandos y
+resultado sean direcciones de memoria
+\begin{itemize}
+\item ¿Antiguas? De antes de que la diferencia de velocidad entre CPU y
+memoria fueran tanta
+\item Recordemos que la principal arquitectura actual tiene \emph{herencia}
+desde 1970\ldots{}
+\item Si en un x86, en \texttt{0x00AC28} tenemos \texttt{ADD [edx], [ecx]}, en \texttt{EDX}
+el valor \texttt{0x010F80} y en \texttt{ECX} el valor \texttt{0x043F00},
+\begin{itemize}
+\item En el \emph{acumulador} \texttt{EAX} obtendremos la suma del \emph{contenido} de
+los dos operadores
+\item \rarrow Tres referencias a memoria en una sola instrucción
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org639e02c}]{El nivel \emph{deseable} de marcos}
+\begin{itemize}
+\item Con estos lineamientos determinamos ya un mínimo absoluto
+\begin{itemize}
+\item \emph{Muy} bajo, poniéndolo en el contexto de los sistemas actuales
+\end{itemize}
+\item ¿Cómo puede el sistema determinar un nivel \emph{deseable} de marcos por
+proceso?
+\begin{itemize}
+\item Depende \emph{siempre} del estado actual del sistema
+\end{itemize}
+\item Podríamos intentar satisfacer los requisitos \emph{totales} de uno de
+los procesos
+\begin{itemize}
+\item A menor cantidad de fallos de página, mayor rendimiento
+\item Pero si reducimos el \emph{grado de multiprogramación}, reducimos el
+uso efectivo del procesador
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4773cb2}]{Asignación igualitaria}
+\begin{itemize}
+\item Buscando un reparto \emph{justo} de recursos, se divide el total de
+memoria física disponible entre el número de procesos
+\item Volviendo a nuestra computadora ejemplo (256 marcos; 62 marcos
+asignados al sistema, 194 a los procesos):
+\begin{itemize}
+\item Si tenemos 4 procesos en ejecución, dos tendrán derecho a 49
+marcos y dos a 48
+\item Los marcos no pueden dividirse; es imposible asignar 48.5 a cada
+uno
+\end{itemize}
+\end{itemize}
+\pause
+\begin{itemize}
+\item El esquema es justo, pero deficiente
+\begin{itemize}
+\item Si tenemos un gestor de bases de datos \(P_1\) con 2048KB (512
+marcos) de memoria virtual, y un proceso de usuario \(P_2\) que sólo
+requiere 112KB (28 páginas)\ldots{}
+\item Ambos recibirán lo mismo — Y \(P_2\)  desperdiciará 20 páginas
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb42fdc1}]{Asignación proporcional}
+\begin{itemize}
+\item Brinda a cada proceso una porción del espacio de memoria física
+proporcional a su uso de memoria virtual
+\item Si además de los dos procesos descritos tenemos a \(P_3\) con 560KB
+(140 páginas) y \(P_4\) con 320KB (80 páginas) de memoria virtual
+\begin{itemize}
+\item Uso total de memoria virtual: \(V_T = 512 + 28 + 140 + 80 = 760\)
+páginas
+\begin{itemize}
+\item Sobreuso de memoria física cercano al 4:1 respecto a las 194
+páginas disponibles
+\end{itemize}
+\end{itemize}
+\item Cada proceso recibirá \(F_P = \frac{V_P}{V_T} m\)
+\begin{itemize}
+\item \(F_P\): Espacio de memoria física que recibirá
+\item \(V_P\): Cantidad de memoria virtual que emplea,
+\item \(m\): Total de marcos de memoria física disponibles
+\end{itemize}
+\item \(P_1\): 130 marcos; \(P_2\): 7 marcos; \(P_3\): 35 marcos; \(P_4\): 20
+marcos
+\begin{itemize}
+\item Proporcional a su uso de memoria virtual.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf201867}]{Modulando la asignación proporcional}
+\begin{itemize}
+\item Mínimos: El esquema debe cuidar nunca asignar por debajo del mínimo
+de la arquitectura
+\begin{itemize}
+\item Si \(P_2\) ocupara sólo 10 marcos de memoria física, en una
+arquitectura x86 no deberían asignársele menos de 3 marcos
+\end{itemize}
+\item Desbalance por procesos \emph{obesos}
+\begin{itemize}
+\item Si \(P_1\) crece al doble de su tamaño virtual, hay que cuidar
+tener \emph{umbrales máximos} para no castigar de más a los demás
+procesos del sistema
+\end{itemize}
+\item ¿Manejo de prioridades?
+\begin{itemize}
+\item Si el sistema maneja prioridades, podrían incluirse ponderadas,
+otorgando proporcionalmente más marcos a los procesos con mayor
+prioridad
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org74030b9}]{\emph{Sufrimiento} ante la entrada de nuevos procesos}
+\begin{itemize}
+\item El esquema de asignación proporcional sufre cuando son admitidos
+nuevos procesos, cambia el tamaño en memoria virtual de alguno de
+los existentes o (aunque menos) finalizan los que están en ejecución
+\item Deben recalcularse los totales, y probablemente reducir de golpe el
+espacio asignado a los procesos existentes
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org99e67d6}]{Desperdicio de recursos}
+\begin{itemize}
+\item El patrón de uso de memoria física de un proceso no necesariamente
+guarda correspondencia con su tamaño en memoria virtual
+\item Pueden emplear mucho menores requisitos en \emph{determinadas secciones}
+de su ejecución
+\item Recordar este punto \rarrow \emph{Conjunto activo}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgff784d5}]{Ámbitos del algoritmo de reemplazo de páginas}
+\begin{center}
+Respondiendo a los problemas que abre la sección anterior, podemos
+discutir el \emph{ámbito} en el que operará nuestro algoritmo de reemplazo
+de páginas
+\end{center}
+
+\begin{itemize}
+\item Reemplazo local
+\item Reemplazo global
+\item Reemplazo global con prioridad
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5f81321}]{Reemplazo local}
+\begin{itemize}
+\item Mantenemos tan estable como sea posible el cálculo de marcos de
+memoria por proceso
+\begin{itemize}
+\item Cuando se presente un fallo de página, sólo se consideran
+aquellas pertenecientes \emph{al mismo proceso}
+\end{itemize}
+\item El proceso tiene asignado un espacio de memoria física
+\begin{itemize}
+\item Lo mantendrá mientras el sistema operativo no tome alguna decisión
+para modificarlo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf559cb5}]{Reemplazo global}
+\begin{itemize}
+\item Los algoritmos de asignación determinan el espacio asignado /al
+momento de su inicialización
+\begin{itemize}
+\item Pueden \emph{influir} en los algoritmos de reemplazo
+\item P.ej. dando \emph{mayor peso} a los marcos de un proceso que excede su
+asignación para ser elegidas como víctima
+\item \ldots{}O pueden operar bajo un esquema \emph{laissez-faire}, buscando que
+el sistema se \emph{auto-regule} basado en las necesidades reales
+momento a momento
+\end{itemize}
+\item Operan sobre el espacio completo de memoria
+\begin{itemize}
+\item La asignación física a cada proceso puede variar según el estado
+del sistema, momento a momento
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9d943bc}]{Reemplazo global con prioridad}
+\begin{itemize}
+\item Esquema mixto
+\item Permite que un proceso \emph{sobrepase su límite}
+\begin{itemize}
+\item Pero sólo siempre que le \emph{robe} espacio en memoria física \emph{sólo}
+a procesos de \emph{prioridad inferior} a él
+\end{itemize}
+\item Consistente con el comportamiento de los algoritmos planificadores
+\begin{itemize}
+\item Siempre da preferencia a un proceso de mayor prioridad por sobre
+los de menor prioridad
+\end{itemize}
+\item Puede también operar bajo \emph{concesiones temporales}, buscando
+equilibrar posteriormente
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org38cc5da}]{Comparando los ámbitos de reemplazo}
+\begin{description}
+\item[{Reemplazo local}] Más rígido; no permite aprovechar las menores
+demandas de unos procesos para favorecer a los que tienen
+mayores demandas en un momento dado
+\item[{Reemplazo global (ambos)}] Puede llevar a rendimiento
+inconsistente fuera del control de cada uno de los procesos
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org487bd05}]{¿Y el tiempo real?}
+\begin{itemize}
+\item Cuando presentamos al \emph{tiempo real} (\emph{Planificación de procesos}),
+mencionamos que el tiempo real duro es incompatible con sistemas
+basados en memoria virtual
+\item Principal razón: Las demoras inducidas por la paginación
+\item Podría indicarse que un proceso de tiempo real esté 100\% en memoria
+física (nunca candidato para paginación)
+\item \emph{Reduce fuertemente} el impacto que sufriría al pelear por recursos
+\begin{itemize}
+\item Pero no lo resuelve por completo
+\item Ni la contención en el bus, ni la inversión de prioridades\ldots{}
+\item \rarrow Sólo podemos prometer \emph{tiempo real suave}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3a3343d}]{Hiperpaginación: Definición}
+\begin{itemize}
+\item Uno o más procesos tienen demasiadas pocas páginas asignadas para
+llevar a cabo su trabajo
+\item Generan fallos de pagina con tal frecuencia que resulta imposible
+realizar trabajo real
+\begin{itemize}
+\item O resulta tan lento que la percepción es de no-avance
+\end{itemize}
+\item El sistema pasa más tiempo intentando satisfacer la paginación que
+trabajando
+\end{itemize}
+\begin{center}
+Estamos en estado de \emph{hiperpaginación}
+
+En inglés, \emph{thrashing} (literal: \emph{paliza})
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgc2a23e6}]{¿Qué puede llevar a la hiperpaginación? (1)}
+\begin{itemize}
+\item El sistema tiene una carga normal
+\item Esquema de reemplazo global de marcos
+\item Se lanza un nuevo proceso
+\begin{itemize}
+\item Su inicialización requiere poblar estructuras a lo largo de su
+memoria virtual
+\item O cambia de \emph{conjunto activo}
+\item Serie de fallos de página \rarrow El sistema responde,
+reemplazando a varios marcos de otros procesos
+\end{itemize}
+\item Mientras esto continúa operando, algunos de los \emph{procesos víctima}
+requieren de las páginas que pasaron a disco
+\begin{itemize}
+\item Recordemos que el disco es miles a millones de veces más lento
+que la memoria\ldots{}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org65924b2},fragile]{¿Qué puede llevar a la hiperpaginación? (2)}
+ \begin{itemize}
+\item La utilización del procesador decrece
+\begin{itemize}
+\item \ldots{}Porque los procesos están esperando a que su memoria esté disponible
+\end{itemize}
+\item El sistema operativo aprovecha la situación para lanzar procesos de
+mantenimiento
+\begin{itemize}
+\item Que requieren que se les asigne memoria
+\item \rarrow Reducen aún más el espacio de memoria física disponible
+\end{itemize}
+\item Se forma una cola de solicitudes de paginación (algunas veces
+contradictorias)
+\item Baja todavía más la actividad del procesador (\texttt{NOOP})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc07dd70}]{¿Cómo se ve la hiperpaginación?}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{../img/gnuplot/hiperpaginacion.png}
+\caption{Al aumentar demasiado el grado de multiprogramación, el uso del CPU cae abruptamente y caemos en la hiperpaginación  (Silberschatz, p.349)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org0898e86}]{Respondiendo a la hiperpaginación}
+\begin{itemize}
+\item Los síntomas son muy claros
+\begin{itemize}
+\item Fáciles de detectar — ¡pregúntenle a cualquier usuario!
+\end{itemize}
+\item Reducir temporalmente el nivel de multiprogramación
+\begin{itemize}
+\item Caímos en hiperpaginación por tener requisitos en memoria que no
+alcanzamos a satisfacer con la memoria física disponible
+\item El sistema puede seleccionar a uno (o más) procesos y
+suspenderlos por completo
+\item Incluso poner su memoria física a disposición de otros procesos
+\item Hasta que salgamos del estado de hiperpaginación
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5d5eb7d}]{¿A cuál proceso \emph{castigar}?}
+\begin{itemize}
+\item Al de menor prioridad
+\item Al que esté causando más fallos
+\item Al que esté ocupando más memoria
+\item \ldots{}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org20cf31b}]{El conjunto activo}
+\begin{itemize}
+\item El \emph{conjunto activo} es una clara aproximación a la \emph{localidad de
+referencia}
+\item El conjunto de páginas con que un proceso está trabajando \emph{en un
+momento dado}
+\begin{itemize}
+\item ¿Qué significa \emph{un momento dado}?
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb2cc563}]{El conjunto activo}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.6\textheight]{../img/gnuplot/conjunto_activo.png}
+\caption{Los picos y valles en la cantidad de fallos de página de un proceso definen a su \emph{conjunto activo}  (Silberschatz, p.349)}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org3409a2c}]{El conjunto activo y el espacio en memoria}
+\begin{itemize}
+\item Idealmente, en todo momento, debemos asignar a cada proceso
+\emph{suficientes páginas} para mantener en memoria física su conjunto
+activo
+\item Si no es posible hacerlo, el proceso es buen candidato para ser
+suspendido
+\item \ldots{}Pero no es fácil detectar con claridad \emph{cuál} es el conjunto activo
+\begin{itemize}
+\item Mucho menos predecir cuál será dentro de determinado tiempo
+\item ¿Cuánto dura un proceso dentro de determinada rutina?
+\item Puede requerir rastrear y verificar decenas de miles de accesos a
+memoria
+\end{itemize}
+\end{itemize}
+\end{frame}
+\end{document}

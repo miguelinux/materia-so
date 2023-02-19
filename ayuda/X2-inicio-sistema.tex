@@ -1,0 +1,650 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Inicio del sistema}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Inicio del sistema},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Introducción}
+\label{sec:orgc7e0c02}
+\begin{frame}[label={sec:org94769c8}]{Enfocada a lo específico}
+\begin{itemize}
+\item Voy a enfocar esta presentación al inicio de un sistema Linux
+\begin{itemize}
+\item Nos da el mayor detalle acerca del proceso
+\item Guarda bitácora de toda la información de inicio
+\item Permite \emph{implementaciones competitivas} de subsistemas (y permite
+un debate amplio, rico al respecto)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8e0fb14}]{¿Es tan difícil?}
+\begin{itemize}
+\item La arquitectura esquemática básica de una computadora es bastante
+trivial
+\item Cargar un sistema operativo\ldots{} Tal vez no tanto
+\item Nos desviaremos brevemente del programa formal de la materia para
+comprender qué es lo que ocurre \emph{en los primeros instantes}
+\begin{itemize}
+\item Buscando entender hasta el punto en que tenemos un sistema
+\emph{usable}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{La carga inicial}
+\label{sec:org20d2de9}
+\begin{frame}[label={sec:orge212ef7}]{Encendiendo la computadora: Alcance del BIOS}
+\begin{itemize}
+\item Verificación de \emph{sanidad} del sistema (POST)
+\begin{description}
+\item[{North Bridge}] CPU+RAM (arquitectura von Neumann)
+\item[{South Bridge}] Dispositivos, componentes adicionales (USB, PCI,
+red, SATA, etc.)
+\end{description}
+\item Enumeración básica de dispositivos
+\item Selección del dispositivo de arranque
+\item Carga del \emph{primer sector} del dispositivo seleccionado
+\begin{itemize}
+\item Verificación de \emph{integridad} del código a ejecutar (lo veremos a
+detalle la siguiente sesión)
+\item Transferencia de control a los elementos \emph{provistos por el
+usuario} (sistema operativo)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org63782ee}]{¿Por qué tenemos programas \emph{cargadores}?}
+\begin{itemize}
+\item En arquitecturas derivadas de Intel, el BIOS opera en \emph{modo real}
+\begin{itemize}
+\item Esto es, con un límite de 640Kb RAM, según la especificación de
+la PC de 1981
+\item En años recientes, se va migrando de BIOS a EFI \(\rightarrow\)
+Veremos la próxima clase lo que eso conlleva
+\end{itemize}
+\item El conocimiento del BIOS del sistema es muy limitado
+\begin{itemize}
+\item Su especificación no sabe más que pedir \emph{el primer sector} (512
+bytes) del disco duro
+\item Cualquier programa que cargue, debe caber en 512 bytes
+\item De ahí que tengamos \emph{cargadores de inicio} (\emph{boot loaders})
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb4f314a}]{Arquitecturas con entornos de inicio \emph{inteligentes}}
+\begin{itemize}
+\item Históricamente ha habido arquitecturas que han ofrecido entornos de
+arranque \emph{inteligentes}
+\item Entornos de arranque \emph{programables} (típicamente basadas en Forth)
+\begin{itemize}
+\item Arquitecturas que lo emplea(ba)n: Sparc, Alpha, PowerPC
+\end{itemize}
+\item Capacidad de alterar parámetros para el inicio del sistema
+\begin{itemize}
+\item Especificar parámetros al kernel
+\item Elegir un distinto dispositivo de arranque
+\item Diagnósticos básicos del sistema
+\item Operaciones básicas de red
+\end{itemize}
+\item Muchas de estas capacidades han ido integrándose al BIOS
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7062943}]{Los cargadores de inicio}
+\begin{itemize}
+\item Prácticamente cualquier sistema operativo moderno depende de un
+cargador de inicio
+\item Estos han ido creciendo para convertirse en verdaderos
+mini-sistemas operativos
+\begin{itemize}
+\item Partcularmente en el área de sistemas de archivo y de E/S
+\item Enumeración de dispositivos (no siempre \emph{heredado} del BIOS)
+\item Comprensión de distintos sistemas de archivos (incluso
+abstracciones como RAID/LVM)
+\item Análisis del estado de la última carga (sugiriendo \emph{modo a prueba
+de fallos})
+\item Edición de los parámetros de invocación del kernel
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge4dfd75}]{El trabajo del cargador}
+\begin{center}
+Por fin, el trabajo del cargador típicamente se reduce a:
+\end{center}
+\begin{itemize}
+\item Informar al usuario que \emph{todo va bien}
+\item Reconocer el entorno
+\item Ubicar y cargar la imágen del sistema operativo en el medio de
+arranque
+\begin{itemize}
+\item Posiblemente también de un \emph{disco de inicio mínimo}
+\end{itemize}
+\item Especificar parámetros de inicio
+\item Transferir la ejecución (y \emph{suicidarse})
+\end{itemize}
+\begin{center}
+\ldots{}Y entramos en el terreno del sistema operativo
+\end{center}
+\end{frame}
+
+\section{Reconociendo el entorno}
+\label{sec:org485ee87}
+\begin{frame}[label={sec:orgaf0120b},fragile]{La fuente de nuestros datos}
+ \begin{itemize}
+\item Bitácora en \texttt{/var/log/dmesg}
+\item La bitácora tiene un \emph{timestamp} en cada línea de su bitácora, con
+resolución de microsegundos
+\begin{itemize}
+\item Eliminada de lo que aquí muestro para que quepa mejor en pantalla
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8016288},fragile]{Primeros pasos: ¿Dónde estoy?}
+ \begin{center}
+¿La arquitectura es capaz de correr el núcleo en cuestión?
+\end{center}
+\begin{verbatim}
+Linux version 3.2.0-4-amd64 (debian-kernel@lists.debian.org) (gcc version 4.6.3 (Debian 4.6.3-14) ) #1 SMP Debian 3.2.35-2
+Command line: BOOT_IMAGE=/vmlinuz-3.2.0-4-amd64 root=/dev/mapper/mosca-root ro vga=791 quiet splash
+\end{verbatim}
+\begin{center}
+¿Cuál es el \emph{mapa de memoria}?
+\end{center}
+\begin{verbatim}
+BIOS-provided physical RAM map:
+ BIOS-e820: 0000000000000000 - 000000000009ec00 (usable)
+ BIOS-e820: 00000000000f0000 - 0000000000100000 (reserved)
+ BIOS-e820: 0000000000100000 - 00000000cd9ffc00 (usable)
+ BIOS-e820: 00000000cd9ffc00 - 00000000cda53c00 (ACPI NVS)
+ BIOS-e820: 00000000cda53c00 - 00000000cda55c00 (ACPI data)
+ BIOS-e820: 00000000cda55c00 - 00000000d0000000 (reserved)
+   (...)
+ BIOS-e820: 00000000ffb00000 - 0000000100000000 (reserved)
+ BIOS-e820: 0000000100000000 - 0000000128000000 (usable)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orge6c693b},fragile]{Características base del equipo}
+ \begin{center}
+Sigue descubriendo información sobre el CPU y la memoria
+\end{center}
+\begin{verbatim}
+NX (Execute Disable) protection: active
+  (...)
+found SMP MP-table at [ffff8800000fe710] fe710
+ACPI: XSDT 00000000000fc7f0 0008C (v01 DELL    B10K    00000015 ASL  00000061)
+  (...)
+No NUMA configuration found
+Faking a node at 0000000000000000-0000000128000000
+Initmem setup node 0 0000000000000000-0000000128000000
+  (...)
+ACPI: IRQ0 used by override.
+ACPI: IRQ2 used by override.
+ACPI: IRQ9 used by override.
+Using ACPI (MADT) for SMP configuration information
+ACPI: HPET id: 0x8086a701 base: 0xfed00000
+SMP: Allowing 8 CPUs, 6 hotplug CPUs
+  (...)
+Booting paravirtualized kernel on bare hardware
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org693b3fa},fragile]{Inicia la ejecución y recorrida de los \emph{buses}}
+ \begin{verbatim}
+Memory: 3880132k/4849664k available (3418k kernel code, 825804k absent, 143728k reserved, 3319k data, 576k init)
+Hierarchical RCU implementation.
+RCU dyntick-idle grace-period acceleration is enabled.
+NR_IRQS:33024 nr_irqs:744 16
+Console: colour dummy device 80x25
+console [tty0] enabled
+hpet clockevent registered
+Fast TSC calibration using PIT
+Detected 2992.557 MHz processor.
+\end{verbatim}
+\begin{itemize}
+\item Hasta este punto, \emph{todo ocurre con t=0.000000}
+\item No es que sea un proceso \emph{tan} instantáneo, sino que el kernel no
+ha comenzado a registrar el paso del tiempo
+\end{itemize}
+\begin{verbatim}
+Calibrating delay loop (skipped), value calculated using timer frequency.. 5985.11 BogoMIPS (lpj=11970228)
+\end{verbatim}
+\begin{itemize}
+\item Y acá el tiempo inicia.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd08ea6e},fragile]{Características de ejecución de procesos en sistema}
+ \begin{center}
+Límites y subsistemas de control
+\end{center}
+\begin{verbatim}
+pid_max: default: 32768 minimum: 301
+Security Framework initialized
+AppArmor: AppArmor disabled by boot time parameter
+Dentry cache hash table entries: 524288 (order: 10, 4194304 bytes)
+Inode-cache hash table entries: 262144 (order: 9, 2097152 bytes)
+Mount-cache hash table entries: 256
+Initializing cgroup subsys cpuacct
+Initializing cgroup subsys memory
+Initializing cgroup subsys devices
+Initializing cgroup subsys freezer
+Initializing cgroup subsys net_cls
+Initializing cgroup subsys blkio
+Initializing cgroup subsys perf_event
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org59625fe},fragile]{Vamos subiendo de nivel: Dispositivos base}
+ \begin{center}
+Fundamental para multitarea: Cómo hablar con el temporizador, manejo
+de interrupciones
+\end{center}
+\begin{verbatim}
+..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+  (...)
+NMI watchdog enabled, takes one hw-pmu counter.
+Brought up 2 CPUs
+Total of 2 processors activated (12011.18 BogoMIPS).
+\end{verbatim}
+\begin{center}
+Y aquí (0.29s) comienzan a activarse los subsistemas que empleará el
+usuario
+\end{center}
+\begin{verbatim}
+devtmpfs: initialized
+  (...)
+NET: Registered protocol family 16
+  (...)
+[Firmware Bug]: ACPI: BIOS _OSI(Linux) query ignored
+ACPI: Interpreter enabled
+ACPI: (supports S0 S1 S3 S4 S5)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org52a0d98},fragile]{Comienza enumeración de dispositivos}
+ \begin{center}
+Primer bus en ser \emph{barrido}: PCI. Proceso largo (0.46s–1.9s)
+\end{center}
+\begin{verbatim}
+PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+pci_root PNP0A03:00: host bridge window [io  0x0000-0x0cf7]
+pci_root PNP0A03:00: host bridge window [io  0x0d00-0xffff]
+pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
+pci_root PNP0A03:00: host bridge window [mem 0x000c0000-0x000effff]
+  (...)
+pci 0000:00:00.0: [8086:2e10] type 0 class 0x000600
+pci 0000:00:01.0: [8086:2e11] type 1 class 0x000604
+pci 0000:00:01.0: PME# supported from D0 D3hot D3cold
+  (...)
+ACPI: PCI Interrupt Link [LNKA] (IRQs 3 4 5 6 7 9 10 *11 12 15)
+ACPI: PCI Interrupt Link [LNKB] (IRQs 3 4 *5 6 7 9 10 11 12 15)
+ACPI: PCI Interrupt Link [LNKC] (IRQs 3 4 5 6 7 *9 10 11 12 15)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org29ed3d2},fragile]{Se reservan \emph{puertos} de memoria \(\rightarrow\) dispositivos}
+ \begin{center}
+Como veremos posteriormente, para \emph{hablar} con ciertos dispositivos
+lo haremos a través de \emph{regiones de memoria} dedicadas a
+entrada/salida
+\end{center}
+\begin{verbatim}
+ACPI: bus type pnp registered
+pnp 00:00: [bus 00-ff]
+pnp 00:00: [io  0x0cf8-0x0cff]
+pnp 00:00: [io  0x0000-0x0cf7 window]
+pnp 00:00: [io  0x0d00-0xffff window]
+pnp 00:00: [mem 0x000a0000-0x000bffff window]
+pnp 00:00: [mem 0x000c0000-0x000effff window]
+  (...)
+pci 0000:00:1f.2: BAR 5: assigned [mem 0xf0000000-0xf00007ff]
+pci 0000:00:03.0: BAR 0: assigned [mem 0xf0000800-0xf000080f 64bit]
+pci 0000:00:1c.1: BAR 15: assigned [mem 0xf0100000-0xf02fffff 64bit pref]
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org59aaed3},fragile]{Encontramos conexiones con otros buses}
+ \begin{center}
+Vemos que el bus PCI es el \emph{maestro}, y de él descienden otros varios
+buses
+\end{center}
+\begin{verbatim}
+pci 0000:00:01.0: PCI bridge to [bus 01-01]
+pci 0000:00:01.0:   bridge window [mem 0xfe500000-0xfe5fffff]
+pci 0000:00:1c.0: PCI bridge to [bus 02-02]
+pci 0000:00:1c.0:   bridge window [io  0x2000-0x2fff]
+pci 0000:00:1c.0:   bridge window [mem 0xfe400000-0xfe4fffff]
+pci 0000:00:1c.0:   bridge window [mem 0xf0300000-0xf04fffff 64bit pref]
+pci 0000:00:1c.1: PCI bridge to [bus 03-03]
+pci 0000:00:1c.1:   bridge window [io  0x1000-0x1fff]
+pci 0000:00:1c.1:   bridge window [mem 0xfe300000-0xfe3fffff]
+pci 0000:00:1c.1:   bridge window [mem 0xf0100000-0xf02fffff 64bit pref]
+pci 0000:00:1e.0: PCI bridge to [bus 04-04]
+pci 0000:00:01.0: setting latency timer to 64
+pci 0000:00:1c.0: setting latency timer to 64
+pci 0000:00:1c.1: setting latency timer to 64
+pci 0000:00:1e.0: setting latency timer to 64
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orgf33c331},fragile]{Últimos toques antes de montar un micro-sistema}
+ \begin{verbatim}
+NET: Registered protocol family 2
+IP route cache hash table entries: 131072 (order: 8, 1048576 bytes)
+TCP established hash table entries: 524288 (order: 11, 8388608 bytes)
+TCP bind hash table entries: 65536 (order: 8, 1048576 bytes)
+TCP: Hash tables configured (established 524288 bind 65536)
+TCP reno registered
+UDP hash table entries: 2048 (order: 4, 65536 bytes)
+UDP-Lite hash table entries: 2048 (order: 4, 65536 bytes)
+NET: Registered protocol family 1
+pci 0000:00:02.0: Boot video device
+PCI: CLS 64 bytes, default 64
+Unpacking initramfs...
+Freeing initrd memory: 10904k freed
+\end{verbatim}
+\begin{itemize}
+\item Con un \emph{ramdisk de inicio} montado termina la \emph{fase inicial} de la carga.
+\item 1.98s \(\rightarrow\) 2.17s
+\item El núcleo sigue reconociendo su entorno\ldots{}
+\end{itemize}
+\#+END\textsubscript{CENTER}
+\end{frame}
+
+\begin{frame}[label={sec:orgc9d6ad9},fragile]{Estructuras de gestión de memoria}
+ \begin{itemize}
+\item Veremos el rol de las \emph{tablas de traducción de direcciones}
+(Translation Lookaside Buffer, TLB) en la unidad \emph{Administración de
+memoria}
+\end{itemize}
+\begin{verbatim}
+Placing 64MB software IO TLB between ffff8800c99fd000 - ffff8800cd9fd000
+software IO TLB at phys 0xc99fd000 - 0xcd9fd000
+Simple Boot Flag at 0x7a set to 0x1
+audit: initializing netlink socket (disabled)
+type=2000 audit(1362187934.168:1): initialized
+HugeTLB registered 2 MB page size, pre-allocated 0 pages
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org6dd650c},fragile]{Comienzan las cargas de módulos controladores}
+ \begin{itemize}
+\item Llegamos aquí a los 2.18s
+\item Comienza la parte más lenta del inicio
+\begin{itemize}
+\item La inicialización de cada dispositivo tarda en promedio entre
+\(\frac{1}{100}s\) y \(\frac{1}{10}s\)
+\end{itemize}
+\end{itemize}
+\begin{verbatim}
+VFS: Disk quotas dquot_6.5.2
+Block layer SCSI generic (bsg) driver version 0.4 loaded (major 253)
+io scheduler noop registered
+io scheduler deadline registered
+io scheduler cfq registered (default)
+  (...)
+vesafb: mode is 1024x768x16, linelength=2048, pages=0
+vesafb: framebuffer at 0xd0000000, mapped to 0xffffc90011100000, using 1536k, total 1536k
+Console: switching to colour frame buffer device 128x48
+  (...)
+Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+serial8250: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+00:07: ttyS0 at I/O 0x3f8 (irq = 4) is a 16550A
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org120af62},fragile]{\emph{Me parece} que ya hay hilos dentro del núcleo}
+ \begin{itemize}
+\item Vemos que se van inicializando elementos con poca relación entre sí
+\item Indicio de hilos que van avanzando en paralelo
+\end{itemize}
+\begin{verbatim}
+mousedev: PS/2 mouse device common for all mice
+rtc_cmos 00:05: RTC can wake from S4
+rtc_cmos 00:05: rtc core: registered rtc_cmos as rtc0
+rtc0: alarms up to one day, 242 bytes nvram, hpet irqs
+cpuidle: using governor ladder
+cpuidle: using governor menu
+TCP cubic registered
+NET: Registered protocol family 10
+Mobile IPv6
+NET: Registered protocol family 17
+Registering the dns_resolver key type
+  (...)
+rtc_cmos 00:05: setting system clock to 2013-03-02 01:32:15 UTC (1362187935)
+Freeing unused kernel memory: 576k freed
+Write protecting the kernel read-only data: 6144k
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orgcf1de37},fragile]{Más subsistemas: UDev, USBcore, EHCI, ATA\ldots{}}
+ \begin{verbatim}
+udevd[52]: starting version 175
+  (...)
+usbcore: registered new interface driver usbfs
+usbcore: registered new interface driver hub
+usbcore: registered new device driver usb
+ehci_hcd: USB 2.0 'Enhanced' Host Controller (EHCI) Driver
+libata version 3.00 loaded.
+uhci_hcd: USB Universal Host Controller Interface driver
+  (...)
+usb usb1: New USB device found, idVendor=1d6b, idProduct=0002
+usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+usb usb1: Product: EHCI Host Controller
+usb usb1: Manufacturer: Linux 3.2.0-4-amd64 ehci_hcd
+usb usb1: SerialNumber: 0000:00:1a.7
+hub 1-0:1.0: USB hub found
+hub 1-0:1.0: 6 ports detected
+ata_generic 0000:00:03.2: setting latency timer to 64
+scsi0 : ata_generic
+scsi1 : ata_generic
+ata1: PATA max UDMA/100 cmd 0xfe80 ctl 0xfe90 bmdma 0xfef0 irq 18
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org876fbcd},fragile]{\emph{Caminando} los buses}
+ \begin{itemize}
+\item A partir de este punto, el núcleo averigua lo que tiene conectado
+por el bus USB
+\item Líneas bastante repetitivas
+\item Desde los 2.64 hasta los 3.0 segundos
+\item Comienzan a aparecer los discos SATA/SCSI (por \texttt{libata})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2fe1327},fragile]{\emph{Caminando} los buses: SATA}
+ \begin{verbatim}
+ata8: SATA link down (SStatus 0 SControl 300)
+ata6: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+ata4: SATA link down (SStatus 0 SControl 300)
+ata5: SATA link up 1.5 Gbps (SStatus 113 SControl 300)
+ata3: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+  (...)
+scsi 2:0:0:0: Direct-Access     ATA      WDC WD5000AAKS-2 12.0 PQ: 0 ANSI: 5
+scsi 4:0:0:0: CD-ROM            TSSTcorp DVD+-RW TS-H653G DW10 PQ: 0 ANSI: 5
+sd 2:0:0:0: [sda] 976773168 512-byte logical blocks: (500 GB/465 GiB)
+sd 2:0:0:0: [sda] Write Protect is off
+sd 2:0:0:0: [sda] Mode Sense: 00 3a 00 00
+sd 2:0:0:0: [sda] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
+sr0: scsi3-mmc drive: 48x/48x writer dvd-ram cd/rw xa/form2 cdda tray
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orgd5812f2},fragile]{Por fin: Sistemas de archivos}
+ \begin{itemize}
+\item Al cargar los controladores de sistemas de archivos (3.55s), ya
+podemos montar y comenzar a iniciar el \emph{entorno operativo}
+\item Esto sigue \emph{sumergido} entre mensajes de descubrimiento de
+dispositivos (principalmente unidades de disco y dispositivos USB)
+\item Veremos posteriormente características de ReiserFS y de otros
+sistemas de archivos
+\end{itemize}
+\begin{verbatim}
+REISERFS (device dm-0): found reiserfs format "3.6" with standard journal
+REISERFS (device dm-0): using ordered data mode
+reiserfs: using flush barriers
+REISERFS (device dm-0): journal params: device dm-0, size 8192, journal first block 18, max trans len 1024, max batch 900, max commit age 30, max trans age 30
+REISERFS (device dm-0): checking transaction log (dm-0)
+REISERFS (device dm-0): Using r5 hash to sort names
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org7614bc8},fragile]{Algunos puntos sueltos\ldots{}}
+ \begin{itemize}
+\item La inicialización continúa
+\item En este caso, \emph{caminar} los buses USB llevó hasta los 5.06s
+\item \emph{Silencio} de 11.4s después de que inicia \texttt{udevd[347]}
+\begin{itemize}
+\item Puede estar estructurando lo encontrado en el sistema \texttt{/dev}
+dinámico (?)
+\end{itemize}
+\item Otras líneas interesantes (sueltas):
+\end{itemize}
+\begin{verbatim}
+input: PC Speaker as /devices/platform/pcspkr/input/input0
+input: Power Button as /devices/LNXSYSTM:00/device:00/PNP0C0C:00/input/input1
+Adding 2097148k swap on /dev/mapper/mosca-swap.  Priority:-1 extents:1 across:2097148k
+EXT4-fs (sda2): mounted filesystem with ordered data mode. Opts: (null)
+kjournald starting.  Commit interval 5 seconds
+\end{verbatim}
+\end{frame}
+
+\section{Inicio del espacio de usuario}
+\label{sec:org2238a57}
+\begin{frame}[label={sec:orgd48d11c},fragile]{¡Bienvenido a tu sistema!}
+ \begin{itemize}
+\item Tras este punto, estamos inequívocamente ya corriendo en un sistema
+completo
+\item La primer evidencia de ello: La carga de \texttt{udevd} como proceso >
+\texttt{pid\_min} (301) a los 5.06s
+\item Ahora, ¿qué sigue?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf2e241a},fragile]{El primer proceso: \texttt{init}}
+ \begin{itemize}
+\item En un sistema Unix, tan pronto el núcleo está listo para ejecutar
+\emph{algo} ejecuta al proceso \texttt{/sbin/init}
+\item \texttt{init} se encarga de inicializar al resto del sistema
+\begin{itemize}
+\item ¿Cómo?
+\end{itemize}
+\item Estrategias \emph{clásicas}: Sistemas BSD, SysV
+\begin{itemize}
+\item Todos los sistemas tipo Unix, hasta hace unos cinco años siguen
+alguna de estas dos vías
+\end{itemize}
+\item Estrategias \emph{modernas}:
+\begin{itemize}
+\item Orientado a \emph{eventos}: \texttt{upstart}
+\item Orientado a \emph{sockets}: \texttt{systemd}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0aed699},fragile]{Esquema BSD (1)}
+ \begin{center}
+\texttt{init} sigue una serie de simples \emph{scripts} para sus principales
+operaciones (de: \href{http://openbsd.org/faq/es/faq10.html}{Gestión del sistema OpenBSD}):
+\end{center}
+\begin{description}
+\item[{/etc/rc}] Fichero de configuración principal. No se debe editar.
+\item[{/etc/rc.conf}] Fichero de configuración usado por /etc/rc para
+saber qué dæmon deben iniciarse con el sistema.
+\item[{/etc/rc.conf.local}] Fichero de configuración que se puede usar
+para anular configuraciones de /etc/rc.conf, sin que sea
+necesario tocar el fichero /etc/rc.conf; muy conveniente para
+los usuarios que actualizan el sistema con frecuencia.
+\end{description}
+(continúa)
+\end{frame}
+
+\begin{frame}[label={sec:org737c7a8}]{Esquema BSD (2)}
+\begin{description}
+\item[{/etc/netstart}] Fichero de configuración usado para iniciar la red. No se debe editar.
+\item[{/etc/rc.local}] Fichero de configuración usado para tareas de
+administración local. Aquí se debe almacenar
+información específica de la máquina anfitriona o
+de los dæmon.
+\item[{/etc/rc.securelevel}] Fichero de configuración para ejecutar las
+órdenes que deben ser invocadas antes de los cambios en el
+nivel de seguridad. Véase init(8).
+\item[{/etc/rc.shutdown}] Fichero de configuración invocado por
+shutdown(8). En este fichero se debe añadir cualquier cosa que
+se quiera hacer antes de cerrar el sistema. Véase
+rc.shutdown(8).
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:orgd9bfedc},fragile]{Esquema SysV (1)}
+ \begin{itemize}
+\item Parte de la idea de diferentes \emph{conjuntos de programas} que pueden
+ser requeridos por distintos \emph{usos del sistema} (\emph{runlevels})
+\item Busca menor dependencia en el administrador para indicar qué se va
+a iniciar
+\begin{itemize}
+\item Permitiendo que los distintos \emph{paquetes} se ubiquen en el punto correcto
+\end{itemize}
+\item Configuración basada en un archivo base, \texttt{/etc/inittab}, y un
+directorio por runlevel (\texttt{/etc/rc0.d/} a \texttt{/etc/rc6.d/})
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb60e50f},fragile]{Esquema SysV (2)}
+ \begin{itemize}
+\item En cada directorio se colocan archivos (ejecutados en órden
+\emph{alfabético}) indicando si \emph{inician} (\texttt{S}) o \emph{detienen} (\texttt{K}) al
+servicio
+\begin{itemize}
+\item Esta convención apunta a que p.ej. \texttt{/etc/rc3.d/S20gdm3} inicia
+\texttt{gdm3} al estar en runlevel 3, y con un \emph{ordenamiento} de 20
+\end{itemize}
+\item Los runlevels \emph{no son acumulativos} (no hay relación que un nivel
+\emph{contenga} al anterior)
+\item Algunos \emph{runlevels} tienen significado especial
+\begin{description}
+\item[{0}] Shutdown (apagado)
+\item[{1}] Mantenimiento / monousuario
+\item[{6}] Restart (reinicio)
+\end{description}
+\end{itemize}
+\end{frame}
+\end{document}

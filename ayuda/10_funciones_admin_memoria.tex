@@ -1,0 +1,537 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Administración de memoria: Funciones y operaciones}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Administración de memoria: Funciones y operaciones},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Introducción}
+\label{sec:orga6053c4}
+\begin{frame}[label={sec:orgef7bf50}]{El administrador de memoria}
+\begin{itemize}
+\item Es otra de las partes \emph{fundamentales} de un sistema operativo
+\item En toda computadora basada en von Neumann, la memoria es el \emph{único}
+almacenamiento a que tiene acceso directo el procesador
+\begin{itemize}
+\item Todo otro almacenamiento tiene que pasar a través de controladores externos
+\item Típicamente manejado a través de \emph{memoria mapeada} o \emph{de acceso directo}
+\end{itemize}
+\item Todo proceso que ejecutemos debe estar \emph{en} memoria
+\begin{itemize}
+\item El administrador de memoria es el encargado de permitir que varios
+procesos la compartan
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3b087da}]{Notación: Sistemas binario, decimal, hexadecimal}
+\begin{center}
+¡Importante!
+\end{center}
+\begin{itemize}
+\item Para comprender bien este tema, así como el siguiente, es importante
+tener un buen dominio de conceptos básicos de los sistemas de numeración
+\begin{itemize}
+\item Particularmente el binario, en segundo término el hexadecimal
+\end{itemize}
+\item Aspectos principales:
+\begin{itemize}
+\item Potencias de 2
+\item Representación numérica en los diferentes sistemas
+\item Máscaras de bits
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd446ebc},fragile]{La memoria caché}
+ \begin{itemize}
+\item El manejo del caché es \emph{casi} transparente para el sistema operativo
+\item Busca resolver el diferencial (creciente) de velocidad entre el CPU
+y la memoria
+\begin{itemize}
+\item La memoria de alta velocidad que maneja el caché es mucho más cara
+\item Comienza a entrar en juego la velocidad de los electrones sobre
+pistas de cobre
+\end{itemize}
+\item Vimos ya que el OS tiene que saber al respecto: \emph{Afinidad} de
+procesos a CPU
+\item Cuando se produce una \emph{falla de caché} (no tiene copia de la
+dirección solicitada), es necesario \emph{detener} al CPU
+\begin{itemize}
+\item Insertando una \emph{burbuja} o \texttt{NOOP} \rarrow \emph{stall} (detención)
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf9ecc90}]{¿Por qué el caché?: Localidad de referencia}
+\begin{center}
+Se ha observado que prácticamente todos los procesos responden al
+principio de \emph{localidad de referencia}:
+\end{center}
+\begin{description}
+\item[{Localidad temporal}] Es probable que un recurso que fue empleado
+recientemente vuelva a ser empleado en un futuro cercano.
+\item[{Localidad espacial}] La probabilidad de que un recurso \emph{aún no
+requerido} sea accesado es mucho mayor si fue requerido algún
+recurso cercano.
+\item[{Localidad secuencial}] Un recurso, y muy particularmente la
+memoria, tiende a ser requerido de forma secuencial.
+
+(Caso especial de \emph{Localidad espacial})
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:orgb60ede4}]{Ilustrando la localidad de referencia}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.75\textheight]{../img/localidad_de_referencia.png}
+\caption{Patrones de acceso a memoria (Silberschatz, p.350)}
+\end{figure}
+\end{frame}
+
+\section{Espacio de direccionamiento}
+\label{sec:orgc11eb76}
+\begin{frame}[label={sec:orge8c84af}]{Abstracción de la memoria}
+\begin{itemize}
+\item La memoria se presenta ante el CPU como un arreglo direccionable
+\item Cada byte tiene una dirección única y consecutiva
+\begin{itemize}
+\item En algunas arquitecturas, las solicitudes deben estar \emph{alineadas}
+(por ejemplo, a 64 bits), y no estarlo causa ua \emph{trampa} o
+\emph{falta}, incurriendo en demoras
+\item Sin embargo, las direcciones siguen siendo de cada \emph{byte}
+\end{itemize}
+\item Para operar sobre \emph{bits} específicos, tenemos que pedir el byte,
+trabajar sobre de él y enviarlo de vuelta — Como una unidad.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga6bd390}]{Espacio de direccionamiento: ¿Hasta dónde puedes contar?}
+\begin{itemize}
+\item Cada arquitectura de procesador tiene un \emph{espacio de
+direccionamiento} determinado
+\begin{itemize}
+\item Siempre es una potencia de 2, y \emph{casi siempre} en números
+\emph{cerrados} (16, 32, 64 \(\rightarrow\) ¡Ojo! ¿24, 48?)
+\end{itemize}
+\item Es el máximo de memoria que dicho procesador puede ver
+\begin{description}
+\item[{\emph{Virtual}}] Lo máximo que la arquitectura ofrece como una
+dirección de memoria
+\item[{\emph{Físico}}] Lo máximo que \emph{un procesador específico} puede
+direccionar (limitado por su número de pines)
+\end{description}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga98cfd7}]{Procesadores de 16 bits \emph{de direccionamiento}}
+\begin{itemize}
+\item Un procesador con \emph{espacio de direccionamiento} de 16 bits puede
+referirse \emph{directamente} a hasta \(2^{16}\) (65,536) bytes.
+\item Principales procesadores de este tipo: Intel 8080 y 8085, Zilog
+Z80, MOS 6502 y 6510
+\begin{itemize}
+\item Se conocen como procesadores de \emph{8 bits} (registros / aritmética)
+\item Implicaciones: ¿Tamaño y uso de os apuntadores?
+\end{itemize}
+\item Intel 8086/8088: Direcciona hasta 20 bits (1024KB)
+\begin{itemize}
+\item Pero al ser una arquitectura \emph{real} de 16 bits, requiere emplear
+\emph{segmentación} para alcanzar toda su memoria
+\end{itemize}
+\item Intel 80286: espacio de direccionamiento de 24 bits (16 MB)
+\begin{itemize}
+\item Pero su mercado era el mismo que el del 8086/8088, y por ciertas
+restricciones de su arquitectura, casi nunca se utilizó en estos
+modos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge63e746}]{Procesadores de 32 bits \emph{de direccionamiento}}
+\begin{itemize}
+\item Hoy en día, los procesadores dominantes son de 32 o 64 bits
+(aritmética)
+\item Un procesador de 32 bits puede direccionar hasta 4GB — \(2^{32}\)
+bytes (4,294,967,296 bytes), casi siempre coincide con 32 bits de
+aritmética
+\begin{itemize}
+\item Hoy en día es una cantidad ya rebasada
+\item Por medio de \emph{PAE} (Extensión de Direcciones Físicas, \emph{Physical
+Address Extension}), puede extenderse hasta \(2^{52}\) (aunque
+típicamente \(2^{36}\), 64GB)
+\item PAE requiere un nivel adicional de \emph{indirección} (lo veremos
+cuando cubramos \emph{paginación}), por lo que pierde \emph{un poco} de
+rendimiento, y cada proceso sigue viendo sólo hasta 4GB.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5ca8dc4}]{Procesadores de 64 bits (\emph{direccionamiento \(\rightarrow\) 48 bits})}
+\begin{itemize}
+\item Los procesadores de 64 bits típicamente manejan direccionamiento de
+48 bits
+\begin{itemize}
+\item 281,474,976,710,656 bytes, 256TB
+\item Un direccionamiento \emph{real} de 64 bits tendría por límite los \emph{16
+exabytes} — \(2^{64}\) bytes (18,446,744,073,709,551,616 bytes)
+\end{itemize}
+\item El hardware actual está limitado por un criterio económico a entre
+\(2^{34}\) y \(2^{48}\) bits, 16GB y 256TB
+\begin{itemize}
+\item El costo de más de 256TB RAM hace extremadamente improbable que
+sea requerido en suficientes procesadores de propósito general
+\begin{itemize}
+\item En un sistema \emph{actual} de escritorio, es muy poco probable
+llegar a requerir incluso más de 16GB
+\item Servidores: no demasiado fuera de lo común 256TB
+\end{itemize}
+\item Cada bit de direccionamiento necesario requiere un pin en el CPU,
+por tanto, tiene un costo económico directo
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org69695a5}]{¿Más allá?}
+\begin{itemize}
+\item ¿Qué tan lejos podemos llegar?
+\item El número total de átomos en el universo está estimado en cerca de
+\(2^{80}\)
+\item ¿Cuánto espacio (físico) necesitamos para nuestra memoria?
+\begin{itemize}
+\item Por más que avance la miniaturización
+\end{itemize}
+\item ¿Cuánto ancho de banda podemos esperar tener?
+\begin{itemize}
+\item ¿Cómo podemos esperar llenar 64 bits de datos?
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{El MMU}
+\label{sec:org1ee780f}
+\begin{frame}[label={sec:org9cde2e1}]{¿Qué es / qué hace el MMU?}
+\begin{itemize}
+\item Casi todos los sistemas operativos modernos \emph{requieren} de una
+\emph{unidad de manejo de memoria} (MMU)
+\begin{itemize}
+\item Hardware, hoy es parte integral del CPU
+\item Intermediario hacia el bus de acceso a memoria
+\end{itemize}
+\item Trabaja \emph{muy} de cerca con el sistema operativo
+\item Encargado de funciones de control de permisos, seguridad, y
+traducción de direcciones
+\item ``Vigilando'' todos los accesos a memoria que ejecuta el código
+\item Existen sistemas operativos multitarea que pueden funcionar sin MMU
+\begin{itemize}
+\item Pagan como precio la confiabilidad del sistema
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga655a52}]{¿Traducción de direcciones?}
+\begin{itemize}
+\item Es común que un sistema requiera más memoria \emph{de la que está
+directamente disponible}
+\begin{itemize}
+\item Más memoria de la que existe físicamente
+\item Más memoria de la que el hardware puede direccionar
+\end{itemize}
+\item Un proceso no tiene por qué conocer los detalles de la asignación de
+memoria — Le damos una vista virtual simplificada
+\begin{itemize}
+\item ¿Cuántos bloques de memoria me asignaron?
+\item ¿Cuál es la ubicación de cada uno de ellos?
+\item ¿Qué pasa si intento escribir (o leer) de donde tengo prohibido?
+\end{itemize}
+\item A lo largo de esta unidad iremos viendo las estrategias para
+responder a esto.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc78ee42}]{Permisos}
+\begin{itemize}
+\item El MMU verifica que un proceso no tenga acceso a datos de otro
+\begin{itemize}
+\item A menos que sea \emph{expresamente permitido} (mediante solicitudes al
+sistema operativo)
+\item Hacer esta verificación desde el sistema operativo mismo
+incurriría en costos demasiado grandes
+\item Una verificación estática no puede ser suficientemente exhaustiva
+\begin{itemize}
+\item Direcciones construidas al vuelo
+\item Modos indirectos de referencia a memoria
+\item \ldots{}
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb94ea82}]{Protección de acceso: Primera aproximación}
+\begin{center}
+La arquitectura nos ofrece dos registros de uso \emph{específico}, y su
+modificación requiere una operación privilegiada / \emph{modo supervisor}:
+\end{center}
+\begin{description}
+\item[{Registro base}] Apunta a la primer dirección de memoria que
+pertenece a este proceso
+\item[{Registro límite}] Cantidad de memoria que pertenece a este proceso
+a partir del registro base
+\end{description}
+\begin{center}
+\emph{NOTA:} Esto asume que los bloques de memoria asignados a cada proceso
+sean \emph{contiguos}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgf83caac}]{Registros base y límite: Ejemplo (1)}
+\begin{itemize}
+\item A un proceso le fue asignado un espacio de 64K (65535 bytes)
+\item A partir de la dirección 503808 (492K)
+\end{itemize}
+\begin{center}
+Esto se traduce a:
+\end{center}
+\begin{itemize}
+\item El \emph{registro base} contiene 503808 (0x7B000)
+\item El \emph{registro limite} contiene 65535 (\(2^{16}\), 0xFFFF)
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orga621b73}]{Registros base y límite: Ejemplo (2)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/ditaa/mem_base_a_limite.png}
+\caption{Espacio de direcciones válidas para el proceso 3 definido por un registro base y un registro límite}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgbbdd066}]{Registros base y límite: Ejemplo (3)}
+\begin{center}
+Comportamiento del MMU
+\end{center}
+\begin{itemize}
+\item Solicita acceso a \(direcc < 503808\) \rarrow \alert{Falla:}
+\begin{itemize}
+\item Violación de segmento (\emph{segmentation fault})
+\end{itemize}
+\item Solicita acceso a \(503808 \le direcc \le 569343\) \rarrow \alert{OK}
+\begin{itemize}
+\item Se otorga acceso a la dirección
+\end{itemize}
+\item Solicita acceso a \(569343 < direcc\) \rarrow \alert{Falla:}
+\begin{itemize}
+\item Violación de segmento (\emph{segmentation fault})
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Espacio en memoria}
+\label{sec:orge662520}
+\begin{frame}[label={sec:org6599151},fragile]{Estructura de un proceso en memoria}
+ \begin{itemize}
+\item Para ejecutar un proceso, el SO \emph{casi nunca} se limita a volcar el
+ejecutable a memoria
+\begin{itemize}
+\item Excepto en sistemas antiguos: Formato \texttt{.COM} de MS-DOS, archivos
+\texttt{a.out} \emph{reales} de Unixes antiguos
+\end{itemize}
+\item Un proceso tiene diversas \emph{regiones} de memoria, con usos muy
+diferentes:
+\end{itemize}
+\begin{columns}\begin{column}{0.4\textwidth}
+\begin{itemize}
+\item Pila de llamadas
+\item Espacio de \emph{libres}
+\item Sección de datos
+\item Sección de texto
+\end{itemize}
+\end{column}\begin{column}{0.5\textwidth}
+\begin{center}
+\includegraphics[height=0.5\textheight]{../img/ditaa/proceso_en_memoria.png}
+\end{center}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org65b5e23}]{Sección de texto}
+\begin{itemize}
+\item Imagen en memoria de las instrucciones
+\item Las direcciones más \emph{bajas} del espacio asignado
+\item El procesador va \emph{avanzando} sobre este espacio mediante el
+registro de instrucción
+\item Su contenido \emph{normalmente} no debería cambiar
+\begin{itemize}
+\item Aunque hay código legal auto-modificable\ldots{}
+\item Afortunadamente, cada vez menos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org454ec67}]{Sección de datos}
+\begin{itemize}
+\item Espacio fijo preasignado para variables \emph{globales}
+\item Se fija en \emph{tiempo de compilación}
+\item Su tamaño no puede cambiar
+\begin{itemize}
+\item Aunque los \emph{datos} sí cambien
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga69a963},fragile]{Espacio de \emph{libres} (\emph{Heap})}
+ \begin{itemize}
+\item Espacio empleado para la asignación dinámica de memoria
+\item Asignado \emph{en tiempo de ejecución}
+\item En lenguajes que requieren \emph{manejo manual} de la memoria, aquí se
+manejan todas las estructuras dinámicas
+\begin{itemize}
+\item En C: \texttt{malloc}, \texttt{free}
+\item En C++: \texttt{new}, \texttt{delete}
+\end{itemize}
+\item En lenguajes con \emph{gestión automática}, es monitoreado por los
+\emph{recolectores de basura}
+\item \emph{Crece hacia arriba}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge07e435}]{Pila de llamadas (\emph{Stack})}
+\begin{itemize}
+\item Estructuras representando la serie de funciones que han sido
+llamadas dentro del proceso, incluyendo:
+\begin{itemize}
+\item Parámetros
+\item Direcciones de \emph{retorno}
+\item Variables locales
+\item etc.
+\end{itemize}
+\item Ocupa la parte \emph{más alta} del espacio en memoria
+\item \emph{Crece hacia abajo}
+\item Indica \emph{el punto actual de ejecución} del programa
+\begin{itemize}
+\item Equivalente a decir \emph{«aquí»}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Resolución de direcciones}
+\label{sec:org118dea0}
+\begin{frame}[label={sec:org4357b0a}]{¿Qué es la \emph{resolución de direcciones}?}
+\begin{itemize}
+\item Cuando escribimos un programa, sus funciones y variables son
+referidas por \emph{nombre}
+\item El compilador va substituyendo los nombres por la \emph{dirección en
+memoria} a donde debe referirse
+\begin{itemize}
+\item Excepto en bibliotecas de ligado dinámico\ldots{} Que abordaremos más
+adelante
+\end{itemize}
+\item Pero en un sistema multiproceso, el compilador no necesariamente
+sabe dónde estará el espacio de memoria asignado al proceso
+\item Las direcciones indicadas en el \emph{texto} del programa deben ser
+\emph{traducidas} (o \emph{resueltas}) a su ubicación definitiva
+\item Esto puede ocurrir en tres momentos\ldots{}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7de4737},fragile]{En tiempo de compilación}
+ \begin{itemize}
+\item El texto de programa tiene la dirección \emph{absoluta} de datos y
+funciones
+\item Muy común en arquitecturas no multiprocesadas
+\item En las PC tempranas, el formato ejecutable \texttt{.COM} es un \emph{volcado de
+memoria} con las direcciones absolutas
+\begin{itemize}
+\item Formato limitado a \emph{un segmento} de memoria (64K — 16 bits,
+¿Recuerdan?)
+\end{itemize}
+\item Hoy en día vemos esto en sistemas embebidos, microcontroladores, o
+de función específica
+\begin{itemize}
+\item p.ej. Arduino
+\end{itemize}
+\item P.ej. la variable \texttt{contador} queda traducida en la imagen \emph{en
+disco} como su dirección: \texttt{510200}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7db8639},fragile]{En tiempo de carga}
+ \begin{itemize}
+\item El sistema operativo tiene una rutina llamada \emph{cargador} (\emph{loader})
+\begin{itemize}
+\item Le asiste frecuentemente el \emph{ligador} (\emph{linker}), para incluir \emph{en
+la sección de texto} todas las bibliotecas externas que requiera
+\end{itemize}
+\item Analiza el texto del programa que va cargando, y actualiza a las
+referencias a memoria para apuntar al lugar correcto
+\begin{itemize}
+\item Agregando el \emph{desplazamiento} (\emph{offset}) necesario (la dirección
+\emph{base})
+\end{itemize}
+\item Depende de que el compilador indique la ubicación de cada una de
+las variables y funciones
+\item P.ej. \texttt{contador} queda traducida como un desplazamiento: \texttt{inicio +
+  5986}
+\begin{itemize}
+\item Al cargarse, \texttt{inicio} es \emph{resuelto} a 504214
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org6e456f5},fragile]{En tiempo de ejecución}
+ \begin{itemize}
+\item El programa \emph{nunca} hace referencia a ubicaciones absolutas de
+memoria
+\begin{itemize}
+\item El código generado por el compilador siempre indica \emph{base} y
+\emph{desplazamiento} (\emph{offset})
+\end{itemize}
+\item Permite que el proceso sea reubicado en la memoria \emph{incluso estando
+ya en ejecución}
+\item Requiere de apoyo en hardware (MMU)
+\item P.ej. la variable \texttt{contador} queda traducida como un desplazamiento:
+\texttt{inicio + 5986}
+\begin{itemize}
+\item \texttt{inicio} se mantiene como etiqueta \emph{durante la ejecución} y es
+resuelta cada vez que se requiera
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org30c1ca9}]{Proceso de compilación y carga}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/dot/tipo_resol_direcc.png}
+\caption{Proceso de compilación y carga de un programa, indicando el tipo de resolución de direcciones  (Silberschatz, p.281)}
+\end{figure}
+\end{frame}
+\end{document}

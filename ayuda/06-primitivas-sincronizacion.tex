@@ -1,0 +1,2019 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Administración de procesos: Primitivas de sincronización}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Administración de procesos: Primitivas de sincronización},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Introducción a la concurrencia}
+\label{sec:org5a4b4e0}
+\begin{frame}[label={sec:org15d6579}]{Concurrencia}
+\begin{itemize}
+\item No tenemos que preocuparnos cuando todos los datos que maneja un
+hilo son \emph{locales}
+\item Al utilizar \emph{variables globales} o recursos externos, debemos
+recordar que el planificador puede interrumpir el flujo \emph{en
+cualquier momento}
+\item No tenemos garantía del ordenamiento que obtendremos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge87bd98},fragile]{Los problemas de la concurrencia (1)}
+ \begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+class EjemploHilos
+  def initialize
+    @x = 0
+  end
+  def f1
+    sleep 0.1
+    print '+'
+    @x += 3
+  end
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+  def f2
+    sleep 0.1
+    print '*'
+    @x *= 2
+  end
+  def run
+    t1 = Thread.new {f1}
+    t2 = Thread.new {f2}
+    sleep 0.1
+    print '%d ' % @x
+  end
+end
+\end{verbatim}
+\end{column}\end{columns}\pause
+\begin{verbatim}
+>> e = EjemploHilos.new;10.times{e.run}
+0 *+3 *+9 *+21 +*48 *+99 +*204 *+411 +*828 *+1659
+
+>> e = EjemploHilos.new;10.times{e.run}
++0 *+6 *+*18 42 +*+90 **186 +375 +**756 ++1515 *3036
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org886ddd5},fragile]{Los problemas de la concurrencia (2)}
+ \begin{itemize}
+\item No son dos hilos compitiendo por el acceso a la variable
+\begin{itemize}
+\item Son tres
+\item El \emph{jefe} también entra en la competencia a la hora de imprimir
+\end{itemize}
+\item A veces, el órden de la ejecución es (¿parece ser?) \texttt{(@x *2) + 3},
+a veces \texttt{(@x + 3) * 2}
+\begin{itemize}
+\item A veces la impresión ocurre en otro órden: \texttt{+**756} o \texttt{++1515}
+\end{itemize}
+\item Esto porque tenemos una \emph{condición de carrera} en el acceso a la
+variable compartida
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgff2128e}]{Condición de carrera (Race condition)}
+\begin{itemize}
+\item Error de programación
+\item Implica a dos procesos (o hilos)
+\item Fallan al comunicarse su estado mutuo
+\item Lleva a \emph{resultados inconsistentes}
+\begin{itemize}
+\item Problema muy común
+\item Difícil de depurar
+\end{itemize}
+\item Ocurre por no considerar la \emph{no atomicidad} de una operación
+\item \alert{Categoría importante de fallos de seguridad}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga1ab466}]{Operación atómica}
+\begin{itemize}
+\item Operación que tenemos la garantía que se ejecutará \emph{o no} como \emph{una
+sóla unidad de ejecución}
+\item \emph{No implica} que el sistema no le retirará el flujo de ejecución
+\begin{itemize}
+\item \emph{El efecto de que se le retire el flujo} no llevará a
+comportamiento inconsistente.
+\item Requiere sincronización \emph{explícita} entre los procesos que la realicen
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0279b8a}]{Sección crítica}
+Es el área de código que:
+\begin{itemize}
+\item Realiza el acceso (¿modificación? ¿lectura?) de datos compartidos
+\item Requiere \emph{ser protegida de accesos simultáneos}
+\item Dicha protección tiene que ser implementada \emph{siempre, y
+manualmente} por el programador
+\begin{itemize}
+\item Identificarlas requiere inteligencia
+\end{itemize}
+\item Debe ser protegida \emph{empleando mecanismos atómicos}
+\begin{itemize}
+\item Si no, el problema podría aminorarse — Pero no prevenirse
+\item ¡Cuidado con los accesos casi-simultáneos!
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgad137ee}]{Sección crítica}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{../img/gnuplot/secc_crit.png}
+\caption{Sincronización: La exclusión de una sección crítica común a varios procesos se protege por medio de regiones de exclusión mutua}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgcfd5c51}]{Bloqueo mutuo}
+\begin{center}
+Algunos autores lo presentan como \emph{interbloqueo}.
+
+En inglés, \emph{deadlock}
+\end{center}
+\begin{itemize}
+\item Dos o más procesos poseen determinados recursos
+\item Cada uno de ellos queda detenido esperando a alguno de los que tiene
+otro
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb53f111}]{Bloqueo mutuo}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{../img/dot/bloqueo_mutuo_simple.png}
+\caption{Esquema clásico de un bloqueo mutuo simple: Los procesos \emph{A} y \emph{B} esperan mutuamente para el acceso a las unidades \emph{1} y \emph{2}.}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org5d5a93b}]{Bloqueo mutuo}
+\begin{itemize}
+\item El sistema operativo puede seguir procesando normalmente
+\begin{itemize}
+\item Pero ninguno de los procesos involucrados puede avanzar
+\item ¿Única salida? Que el administrador del sistema interrumpa a
+alguno de los procesos
+\begin{itemize}
+\item \ldots{}Implica probable pérdida de información
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgae0cc03}]{Inanición}
+\begin{center}
+En inglés, \emph{resource starvation}
+\end{center}
+\begin{itemize}
+\item Situación en que uno o más procesos están atravesando exitosamente
+una sección crítica
+\begin{itemize}
+\item Pero el flujo no permite que otro proceso, posiblemente de otra
+clase, entre a dicha sección
+\end{itemize}
+\item El sistema continúa siendo productivo, pero uno o más de los procesos
+puede estar detenido por un tiempo arbitrariamente largo.
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4c67166},fragile]{Primer acercamiento: \emph{Reservas de autobús}}
+ \begin{center}
+¡Inseguro! ¿Qué hizo el programador bien? ¿qué hizo mal?
+\end{center}
+\begin{verbatim}
+capacidad = 40
+proximo_asiento = 1
+bloq = False
+class NoHayAsientos(RuntimeError):
+    pass
+def asigna_asiento():
+    global capacidad, proximo_asiento, bloq
+    while bloq:
+	sleep(0.1)
+    bloq=True
+    if proximo_asiento < capacidad:
+	asignado = proximo_asiento
+	proximo_asiento = proximo_asiento + 1
+	print('Asiento asignado: ', asignado)
+    else:
+	bloq = False
+	raise(NoHayAsientos('No hay asientos disponibles'))
+    bloq = False
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orga4695c1},fragile]{¿Por qué es inseguro el ejemplo anterior?}
+ \begin{center}
+Líneas 5 y 6:
+\end{center}
+\begin{itemize}
+\item Espera activa (\emph{spinlock}): Desperdicio de recursos
+\begin{itemize}
+\item Aunque esta espera activa lleva dentro un \texttt{sleep}, sigue siendo
+espera activa.
+\item Eso hace que el código sea \emph{poco considerado} — No que sea inseguro
+\end{itemize}
+\item ¿Quién protege a \texttt{\$bloq} de modificaciones no-atómicas?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org922876f}]{Las secciones críticas deben protegerse a otro nivel}
+\begin{itemize}
+\item Las primitivas que empleemos para sincronización \emph{deben ser
+atómicas}
+\item La única forma de asegurar su atomicidad es \emph{implementándolas a un
+nivel más bajo} que el del código que deben proteger
+\begin{itemize}
+\item (Al menos) el proceso debe implementar la protección entre hilos
+\item (Al menos) el sistema operativo debe implementar la protección
+entre procesos
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3b3c4c5},fragile]{Mismo ejemplo, empleando un candado (\emph{mutex})}
+ \begin{verbatim}
+from threading import Lock
+capacidad = 40
+proximo_asiento = 1
+bloq = Lock()
+class NoHayAsientos(RuntimeError):
+    pass
+def asigna_asiento():
+    global capacidad, proximo_asiento, bloq
+    bloq.acquire()
+    if proximo_asiento < capacidad:
+	asignado = proximo_asiento
+	proximo_asiento = proximo_asiento + 1
+	print('Asiento asignado: ', asignado)
+    else:
+	bloq.release()
+	raise(NoHayAsientos('No hay asientos disponibles'))
+    bloq.release()
+\end{verbatim}
+\end{frame}
+
+\section{Primitivas de sincronización}
+\label{sec:org991856c}
+\begin{frame}[label={sec:org8d8ac2c}]{Requisitos para las \emph{primitivas}}
+\begin{itemize}
+\item Implementadas a un nivel más bajo que el código que protegen
+\begin{itemize}
+\item Desde el sistema operativo
+\item Desde bibliotecas de sistema
+\item Desde la máquina virtual (p.ej. JVM)
+\end{itemize}
+\item ¡No las implementes tú mismo!
+\begin{itemize}
+\item Parecen conceptos simples\ldots{} Pero no lo son
+\item Utilicemos el conocimiento acumulado de medio siglo
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgf47787b}]{Candados (Mutex)}
+\begin{itemize}
+\item Contracción de \emph{Mutual Exclusion}, exclusión mutua
+\item Un mecanismo que asegura que la región protegida del código se
+ejecutará como si fuera atómica
+\begin{itemize}
+\item \emph{No garantiza que el planificador no interrumpa} — Eso rompería el
+multiprocesamiento preventivo.
+\item Requiere que \emph{cada hilo o proceso} implemente (¡y respete!) al
+mutex
+\end{itemize}
+\item Mantiene en espera a los procesos adicionales que quieran emplearlo
+\begin{itemize}
+\item Sin garantizar ordenamiento
+\end{itemize}
+\end{itemize}
+\pause
+\begin{itemize}
+\item Ejemplo: La llave del baño en un entorno de oficina mediana
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orgc916913}]{Semáforos}
+\begin{itemize}
+\item Propuestos por Edsger Dijkstra (1965)
+\item Estructuras de datos simples para la sincronización y (muy
+limitada) comunicación entre procesos
+\begin{itemize}
+\item ¡Increíblemente versátiles para lo limitado de su interfaz!
+\end{itemize}
+\item Se han publicado muchos patrones basados en su interfaz, modelando
+interacciones muy complejas
+\end{itemize}
+\begin{center}
+\alert{¡Ojo!} No piensen en semáforos viales, verde/amarillo/rojo (eso sería
+un simple \emph{mutex}). Piensen en semáforos de tren.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org0788d39}]{Semáforos de tren}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/semaforo_tren.jpg}
+\caption{Semáforo de tren (Fuente: Wikipedia, \emph{Señalización ferroviaria argentina})}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgd2fff16},fragile]{Las tres operaciones de los semáforos}
+ \begin{description}
+\item[{Inicializar}] Puede inicializarse a cualquier valor entero. Una
+vez inicializado, el valor \emph{ya no puede ser leído}.
+\item[{Decrementar}] Disminuye en 1 el valor del semáforo. Si el
+resultado es negativo, el hilo \emph{se bloquea} y no
+puede continuar hasta que \emph{otro hilo} incremente
+al semáforo.
+
+Puede denominarse \texttt{wait}, \texttt{down}, \texttt{acquire}, \texttt{P}
+(\emph{proberen te verlagen}, \emph{intentar decrementar})
+\item[{Incrementar}] Incrementa en 1 el valor del semáforo. Si hay
+hilos esperando, uno de ellos es despertado.
+
+Puede denominarse \texttt{signal}, \texttt{up}, \texttt{release},
+\texttt{post} o \texttt{V} (\emph{verhogen}, \emph{incrementar}).
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org82672c1},fragile]{Los semáforos en C (POSIX pthreads)}
+ \begin{verbatim}
+int sem_init(sem_t *sem, int pshared, unsigned int value);
+int sem_post(sem_t *sem);
+int sem_wait(sem_t *sem);
+int sem_trywait(sem_t *sem);
+\end{verbatim}
+
+\begin{itemize}
+\item \texttt{pshared} indica si se compartirá entre procesos o sólo entre hilos
+(por optimización de estructuras)
+\item \texttt{sem\_trywait} extiende la interfaz de Dijkstra: Verifica si el
+semáforo puede ser decrementado, pero en vez de bloquearse, regresa
+al invocante un error
+\begin{itemize}
+\item El proceso \emph{debe tener la lógica} para no proceder a la sección
+crítica
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc8ec4ff},fragile]{Variables de Condición}
+ \begin{center}
+Extensión sobre el comportamiento de un mutex permitiéndole una mayor
+``inteligencia''. Siempre operan \emph{junto} con un mutex.
+\end{center}
+\begin{description}
+\item[{\texttt{wait()}}] Libera el candado y se bloquea hasta recibir una
+\emph{notificación}. Una vez despertado, \emph{re-adquiere} el
+candado.
+\item[{\texttt{signal()}}] Despierta a un hilo esperando a esta condición (si
+lo hay). No libera al candado.
+\item[{\texttt{broadcast}}] Notifica a todos los hilos que estén esperando a
+esta condición
+\item[{\texttt{timedwait(timeout)}}] Como \texttt{wait()}, pero se despierta
+(regresando error) pasado el tiempo indicado si no recibió
+notificación.
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:orgef709df},fragile]{Variables de Condición en C (POSIX pthreads)}
+ \begin{verbatim}
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+int pthread_cond_init(pthread_cond_t *cond, pthread_condattr_t *cond_attr);
+int pthread_cond_signal(pthread_cond_t *cond);
+int pthread_cond_broadcast(pthread_cond_t *cond);
+int pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
+int pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, const struct timespec *abstime);
+int pthread_cond_destroy(pthread_cond_t *cond);
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org720ee3a},fragile]{Ejemplo con variables de condición}
+ \begin{verbatim}
+int x,y;
+pthread_mutex_t mut = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+/* (...) */
+/*  Un hilo espera hasta que x sea mayor que y */
+pthread_mutex_lock(&mut);
+while (x <= y) {
+	pthread_cond_wait(&cond, &mut);
+}
+/* (Realiza el trabajo...) */
+pthread_mutex_unlock(&mut);
+/* (...) */
+/* Cuando otro hilo modifica a x o y, notifica */
+/* a todos los hilos que estén esperando */
+pthread_mutex_lock(&mut);
+x = x + 1;
+if (x > y) pthread_cond_broadcast(&cond);
+pthread_mutex_unlock(&mut);
+\end{verbatim}
+{\scriptsize
+\url{http://www.sourceware.org/pthreads-win32/manual/pthread\_cond\_init.html}
+}
+\end{frame}
+
+\begin{frame}[label={sec:org6b630d5},fragile]{Ejemplo de espera limitada con VCs}
+ \begin{verbatim}
+struct timeval now;
+struct timespec timeout;
+int retcode;
+pthread_mutex_lock(&mut);
+gettimeofday(&now);
+timeout.tv_sec = now.tv_sec + 5;
+timeout.tv_nsec = now.tv_usec * 1000;
+retcode = 0;
+while (x <= y && retcode != ETIMEDOUT) {
+	retcode = pthread_cond_timedwait(&cond, &mut, &timeout);
+}
+if (retcode == ETIMEDOUT) {
+	/* Expirado el tiempo estipulado - Falla. */
+} else {
+	/* Trabaja con x y y */
+}
+pthread_mutex_unlock(&mut);
+
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orgc5bc5ac}]{Problemática con mutexes, semáforos y VCs}
+\begin{itemize}
+\item No sólo hay que encontrar el mecanismo correcto para proteger
+nuestras secciones críticas
+\begin{itemize}
+\item hay que \emph{implementarlo correctamente}
+\item La semántica de paso de mensajes por esta vía puede ser confusa
+\end{itemize}
+\item Un encapsulamiento \emph{más claro} puede reducir problemas
+\item Puede haber procesos que compitan por recursos \emph{de forma hostil}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org62c9886},fragile]{Competencia hostil por recursos}
+ \begin{center}
+Qué pasa si en vez de esto:
+\end{center}
+\begin{verbatim}
+sem_wait(semaforo);
+seccion_critica();
+sem_post(semaforo);
+\end{verbatim}
+\begin{center}
+Tenemos esto:
+\end{center}
+\begin{verbatim}
+while (sem_trywait(semaforo) != 0) {}
+seccion_critica();
+sem_post(semaforo);
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org70d7976},fragile]{La estupidez humana puede ser infinita}
+ \begin{verbatim}
+/* Crucemos los dedos... */
+/* A fin de cuentas, corremos con baja frecuencia! */
+seccion_critica();
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orgda63760}]{Monitores}
+\begin{itemize}
+\item Estructuras abstractas (\emph{ADTs} u \emph{objetos}) provistas por el lenguaje
+o entorno de desarrollo
+\item \emph{Encapsulan} tanto a los datos \emph{como a las funciones que los pueden
+manipular}
+\item Impiden el acceso directo a las funciones potencialmente peligrosas
+\item \emph{Exponen} una serie de \emph{métodos públicos}
+\begin{itemize}
+\item Y pueden implementar \emph{métodos privados}
+\end{itemize}
+\item Al no presentar una interfaz que puedan \emph{subvertir}, aseguran que
+todo el código que asegura el \emph{acceso concurrente seguro} es empleado
+\item Pueden ser presentados como \emph{bibliotecas}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge51aa88},fragile]{Ejemplo: Sincronización en Java}
+ \begin{center}
+\emph{Java} facilita que una clase estándar se convierta en un monitor como
+una propiedad de la declaración de método, y lo implementa
+directamente en la JVM. (Silberschatz):
+\end{center}
+\begin{verbatim}
+public class SimpleClass {
+  // . . .
+  public synchronized void safeMethod() {
+    /* Implementation of safeMethod() */
+  }
+}
+\end{verbatim}
+La JVM implementa:
+\begin{itemize}
+\item Mutexes a través de la declaración \texttt{synchronized}
+\item \emph{variables de condición}
+\item Una semántica parecida (¡no idéntica!) a la de semáforos con
+\texttt{var.wait()} y \texttt{var.signal()}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0d7a675}]{Soluciones en hardware}
+\begin{itemize}
+\item Decimos una y otra vez que \emph{la concurrencia está aquí para quedarse}
+\item El hardware especializado para cualquier cosa (interrupciones, MMU,
+punto flotante, etc.) es siempre caro, hasta que baja de precio
+\item ¿No podría el hardware ayudarnos a implementar operaciones atómicas?
+\end{itemize}
+\begin{center}
+Veamos algunas estrategias
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org1df1b2f}]{Inhabilitación de interrupciones}
+\begin{center}
+Efectivamente evita que las secciones críticas sean interrumpidas,
+pero\ldots{}
+\end{center}
+\pause
+\begin{itemize}
+\item Inútil cuando hay multiprocesamiento real
+\begin{itemize}
+\item A menos que detenga también la ejecución en los demás CPUs
+\end{itemize}
+\item \emph{Matar moscas a cañonazos}
+\item Inhabilita el multiproceso preventivo
+\begin{itemize}
+\item Demasiado peligroso \rarrow Bastaría un error en la sección
+crítica de \emph{cualquier proceso} para que se congelara el sistema
+entero
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga40190e},fragile]{Instrucciones atómicas: \texttt{test\_and\_set} (1)}
+ Siguiendo una implementación \emph{en hardware} correspondiente a:
+\begin{verbatim}
+boolean test_and_set(int i) {
+    if (i == 0) {
+	i = 1;
+	return true;
+    } else return false;
+}
+void free_lock(int i) {
+    if (i == 1) i = 0;
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orgfba88fe},fragile]{Instrucciones atómicas: \texttt{test\_and\_set} (2)}
+ Bastaría con:
+\begin{verbatim}
+enter_region:
+  tsl reg, flag      ; Test and Set Lock; 'flag' es la variable
+		     ; compartida, es cargada al registro 'reg'
+		     ; y, atomicamente, convertida en 1.
+  cmp reg, #0        ; Era la bandera igual a 0 al entrar?
+  jnz enter_region   ; En caso de que no fuera 0 al ejecutar
+		     ; tsl, vuelve a 'enter_region'
+  ret                ; Termina la rutina. 'flag' era cero al
+		     ; entrar. 'tsl' fue exitoso y 'flag' queda
+		     ; no-cero. Tenemos acceso exclusivo al
+		     ; recurso protegido.
+leave_region:
+  move flag, #0      ; Guarda 0 en flag, liberando el recurso
+  ret                ; Regresa al invocante.
+\end{verbatim}
+
+\begin{center}
+¿Qué problema le vemos?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org7464561},fragile]{Problemas con \texttt{test\_and\_set}}
+ \begin{itemize}
+\item Espera activa
+\begin{itemize}
+\item Se utiliza sólo en código no interrumpible (p.ej. gestor de
+interrupciones en el núcleo)
+\end{itemize}
+\item Código no portable
+\item Imposible de implementar en arquitecturas RISC limpias
+\begin{itemize}
+\item Doble acceso a memoria en una sóla instrucción
+\item \ldots{}Muy caro de implementar en arquitecturas CISC
+\end{itemize}
+\item Susceptible a problemas de coherencia de cache
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgbdc9dfa}]{Memoria transaccional}
+\begin{itemize}
+\item Idea base: Semántica de bases de datos en el acceso a memoria
+\item Permite agrupar varias operaciones en una sóla \emph{transacción}
+\begin{itemize}
+\item Una vez terminada, \emph{confirmar} (\emph{commit}) todos los cambios
+\item O, en caso de error, \emph{rechazarlos} (\emph{rollback})
+\end{itemize}
+\item Si algún otro proceso modifica alguna de las localidades en
+cuestión, el proceso se \emph{rechaza}
+\item Toda lectura de memoria antes de \emph{confirmar} entrega los datos
+previos
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org4f4ff23},fragile]{Memoria transaccional: Ejemplo de semántica}
+ \begin{verbatim}
+do {
+    begin_transaction();
+    var1 = var2 * var3;
+    var3 = var2 - var1;
+    var2 = var1 / var2;
+} while (! commit_transaction());
+\end{verbatim}
+
+Ejemplo poco eficiente, elegido meramente por claridad: Efectúa
+múltiples cálculos dentro de una espera activa efectiva
+\end{frame}
+
+\begin{frame}[label={sec:org5f13c71}]{Memoria transaccional en software (STM)}
+\begin{itemize}
+\item Implementaciones como la mencionada disponibles en varios lenguajes
+\item Computacionalmente caras
+\begin{itemize}
+\item Invariablemente \emph{mucho} más lentas
+\item Y menos eficientes en espacio
+\item \ldots{}Pero en hardware tampoco serían mucho más baratas — y sí
+tendrían restricciones (en tamaño o cantidad de transacciones
+simultáneas)
+\end{itemize}
+\item Puede llevar a inconsistencias si implican \emph{cualquier estructura}
+fuera del control de la transacción (archivos, dispositivos, IPC)
+\item Construcción poderosa (¡y cómoda!)
+\end{itemize}
+\end{frame}
+
+\section{Patrones basados en semáforos}
+\label{sec:orgcd76726}
+\begin{frame}[label={sec:orgcbe8cd6}]{¿Patrones?}
+\begin{itemize}
+\item A continuación veremos ocho \emph{patrones} de sincronización basados
+en semáforos.
+\begin{itemize}
+\item Señalizar (\emph{signal}), \emph{Rendezvous}, Mutex, Multiplex, Torniquete
+(\emph{turnstile}), Apagador (\emph{switch}), Barrera (\emph{barrier}), Cola
+(\emph{queue})
+\item Claro está, hay más. Estos son sólo los básicos.
+\end{itemize}
+\end{itemize}
+\begin{center}
+Sí, pero\ldots{}
+\vfill
+¿Qué son los patrones? ¿De qué me sirven? ¿Cómo los puedo usar?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org6b084c3}]{Sí, ¡Patrones!}
+\begin{itemize}
+\item Estructuras de programación que \emph{tienden a aparecer} como respuestas
+naturales
+\begin{itemize}
+\item En el código de \emph{varios} buenos programadores
+\end{itemize}
+\item Conviene conocerlos y tenerlos en mente para reconocer las
+\emph{situaciones} en que los podamos emplear
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9148da3},fragile]{Señalizar}
+ \begin{itemize}
+\item Un hilo debe informar a otro que cierta condición está cumplida
+\item Ejemplo: Un hilo prepara una conexión en red mientras el otro
+prepara los datos a enviar
+\begin{itemize}
+\item No podemos arriesgarnos a comenzar la transmisión hasta que la
+conexión esté lista
+\end{itemize}
+\end{itemize}
+\begin{verbatim}
+from threading import Semaphore, Thread
+semaf = Semaphore(0)
+Thread(target=prepara_conexion, args=[semaf]).start()
+Thread(target=envia_datos, args=[semaf]).start()
+\end{verbatim}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+def prepara_conexion(semaf):
+  crea_conexion()
+  semaf.release()
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+def envia_datos(semaf):
+  calcula_datos()
+  semaf.acquire()
+  envia_por_red()
+\end{verbatim}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org3d2a24b}]{\emph{Rendezvous}}
+\begin{itemize}
+\item Nombre tomado del francés para \emph{preséntense} (utilizado ampliamente
+en inglés para \emph{tiempo y lugar de encuentro})
+\item Dos hilos deben esperarse mutuamente en cierto punto para continuar
+en conjunto
+\begin{itemize}
+\item Empleamos dos semáforos
+\end{itemize}
+\item Por ejemplo, en un GUI:
+\begin{itemize}
+\item Un hilo prepara la interfaz gráfica y actualiza sus eventos
+\item Otro hilo efectúa cálculos para mostrar
+\item Queremos mostrar la simulación desde el principio, no debe iniciar
+el cálculo antes de que haya una interfaz mostrada
+\item No queremos que la interfaz se presente en blanco
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org3e9198f},fragile]{\emph{Rendezvous}}
+ \begin{verbatim}
+from threading import Semaphore, Thread
+guiListo = Semaphore(0)
+calculoListo = Semaphore(0)
+Thread(target=gui, args=[]).start()
+Thread(target=calculo, args=[]).start()
+\end{verbatim}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+def calculo():
+  inicializa_datos()
+  calculoListo.release()
+  guiListo.acquire()
+  procesa_calculo()
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+def gui():
+  inicializa_gui()
+  guiListo.release()
+  calculoListo.acquire()
+  recibe_eventos()
+\end{verbatim}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org1ec4415},fragile]{Mutex}
+ Un mutex puede implementarse con un semáforo inicializado a 1:
+\begin{verbatim}
+mutex = Semaphore(1)
+# ...Inicializamos estado y lanzamos hilos
+mutex.acquire()
+# Estamos en la region de exclusion mutua
+x = x + 1
+mutex.release()
+# Continua la ejecucion paralela
+\end{verbatim}
+\begin{itemize}
+\item Varios hilos pueden pasar por este código, tranquilos de que la
+región crítica será accesada por sólo uno a la vez
+\item El mismo mutex puede proteger a \emph{diferentes secciones críticas}
+(p.ej. distintos puntos donde se usa el mismo recurso)
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org487e438},fragile]{Multiplex}
+ \begin{itemize}
+\item Un mutex que permita a \emph{no más de cierta cantidad de hilos}
+empleando determinado recurso
+\item Para implementar un \emph{multiplex}, basta inicializar el semáforo de
+nuestro mutex a un valor superior:
+\end{itemize}
+\begin{verbatim}
+import threading; import time; import random
+multiplex = threading.Semaphore(5)
+
+def operacion(id, semaf):
+  semaf.acquire()
+  print("Id %d en la secc. crit." % id)
+  time.sleep(random.random())
+  semaf.release()
+  print("Terminando el id %d" % id)
+
+for hilo in range(10):
+  threading.Thread(target=operacion, args=[hilo,multiplex]).start()
+\end{verbatim}
+\end{frame}
+\begin{frame}[label={sec:org386d9a7},fragile]{Torniquete}
+ \begin{itemize}
+\item Garantiza que un grupo de hilos o procesos pasan por un punto
+determinado \emph{de uno en uno}
+\item Ayuda a controlar contención, es empleado como parte de
+construcciones posteriores
+\begin{verbatim}
+torniquete = Semaphore(0)
+# (...)
+if alguna_condicion():
+  torniquete.release()
+# (...)
+torniquete.acquire()
+torniquete.release()
+\end{verbatim}
+\item Esperamos primero a una \emph{señalización} que permita que los procesos
+comiencen a fluir
+\item La sucesión rápida \texttt{acquire()} / \texttt{release()} permite que los
+procesos fluyan uno a uno
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org785e8fc}]{Apagador}
+\begin{itemize}
+\item Principalmente emplados en situación de \emph{exclusión categórica}
+\begin{itemize}
+\item Categorías de procesos, no procesos individuales, que deben
+excluirse mutuamente de secciones críticas
+\end{itemize}
+\item Metáfora empleada:
+\begin{itemize}
+\item La zona de exclusión mutua es un \emph{cuarto}
+\item Los procesos que quieren entrar deben verificar \emph{si está prendida
+la luz}
+\end{itemize}
+\item Implementación ejemplo a continuación (problema de
+\emph{lectores-escritores})
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org1f75b0f}]{Barrera}
+\begin{itemize}
+\item Generalización de \emph{rendezvous} para manejar a varios hilos (no sólo
+dos)
+\item El papel de cada uno de estos hilos puede ser el mismo, puede ser
+distinto
+\item Requiere de una variable adicional para mantener registro de su
+\emph{estado}
+\begin{itemize}
+\item Esta variable adicional es \emph{compartida} entre los hilos, y debe
+ser \emph{protegida por un mutex}
+\end{itemize}
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org62a64a1},fragile]{Barrera: Código ejemplo}
+ \begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+from threading import Semaphore, Thread
+cuenta = 0
+mutex = Semaphore(1)
+barrera = Semaphore(0)
+for i in range(10):
+  Thread(target=vamos,args=[i]).start()
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+def vamos(id):
+  global cuenta, mutex, barrera
+  inicializa(id)
+  mutex.acquire()
+  cuenta = cuenta + 1
+  if cuenta == 10:
+    barrera.release()
+  mutex.release()
+  barrera.acquire()
+  barrera.release()
+  procesa(id)
+\end{verbatim}
+\end{column}\end{columns}
+\begin{itemize}
+\item Todos los hilos se inicializan por separado (\texttt{inicializa()})
+\item Ningún hilo inicia hasta que todos estén listos
+\item \emph{Pasar la barrera} en este caso equivale a \emph{habilitar un torniquete}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb3c855d},fragile]{Barreras: Implementación en \texttt{pthreads}}
+ \begin{itemize}
+\item Las barreras son una construcción tan común que las encontramos
+"prefabricadas"
+\item Definición en los hilos \texttt{POSIX} (\texttt{pthreads}):
+\end{itemize}
+\begin{verbatim}
+int pthread_barrier_init(pthread_barrier_t  *barrier,
+		    const pthread_barrierattr_t *restrict attr,
+		    unsigned count);
+int pthread_barrier_wait(pthread_barrier_t  *barrier);
+int pthread_barrier_destroy(pthread_barrier_t *barrier);
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orge707a18}]{Cola}
+\begin{itemize}
+\item Tenemos que asegurarnos que procesos de dos distintas categorías
+procedan siempre \emph{en pares}
+\item Patrón conocido también como \emph{baile de salón}:
+\begin{itemize}
+\item Para que una pareja baile, tiene que haber un \emph{líder} y un
+\emph{seguidor}
+\item Cuando llega al salón un \emph{líder}, revisa si hay algún \emph{seguidor}
+esperando
+\begin{itemize}
+\item Si lo hay, bailan
+\item Si no, espera a que llegue uno
+\end{itemize}
+\item El seguidor emplea la misma lógica.
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgff98e54},fragile]{Cola}
+ \begin{verbatim}
+colaLideres = Semaphore(0)
+colaSeguidores = Semaphore(0)
+# (...)
+\end{verbatim}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+def lider():
+  colaSeguidores.release()
+  colaLideres.acquire()
+  baila()
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+def seguidor():
+  colaLideres.release()
+  colaSeguidores.acquire()
+  baila()
+\end{verbatim}
+\end{column}\end{columns}
+\pause
+\begin{itemize}
+\item Nuevamente, estamos viendo un \emph{rendezvous}
+\begin{itemize}
+\item Pero es entre dos categorías, no entre dos hilos específicos
+\end{itemize}
+\item El patrón puede refinarse mucho, esta es la implementación básica
+\begin{itemize}
+\item Asegurarse que sólo una pareja baile a la vez
+\item Asegurarse que bailen en el órden en que llegaron
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\section{Problemas clásicos}
+\label{sec:org99f0a2c}
+\begin{frame}[label={sec:orgbb6ec91}]{¿De qué se tratan estos problemas clásicos?}
+\begin{itemize}
+\item Manera fácil de recordar para hablar de situaciones comunes en la
+vida real
+\item Forma de demostrar las ventajas/desventajas de una construcción de
+sincronización frente a otras
+\item Ampliamente utilizados en la literatura de la materia
+\item Ayudan a comprender la complejidad del manejo de los patrones,
+aparentemente simples
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org2ccd3f0}]{Problema productor-consumidor: Planteamiento}
+\begin{itemize}
+\item División de tareas tipo \emph{línea de ensamblado}
+\begin{itemize}
+\item Un grupo de procesos va \emph{produciendo} ciertas estructuras
+\item Otro grupo va \emph{consumiéndolas}
+\end{itemize}
+\item Emplean un buffer de acceso compartido para comunicarse dichas
+estructuras
+\begin{itemize}
+\item Agregar o retirar un elemento del buffer \emph{debe hacerse de forma
+atómica}
+\item Si un consumidor está listo y el buffer está vacío, debe
+bloquearse (¡no espera activa!)
+\end{itemize}
+\item Refinamientos posteriores
+\begin{itemize}
+\item Implementación con un buffer no-infinito (¿buffer circular?):
+\end{itemize}
+\item Vida real: Cola de trabajos para impresión, \emph{Pipes} (tuberías) entre
+procesos
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:org8ff4667},fragile]{Productor-consumidor: Implementación ingenua}
+ \begin{verbatim}
+import threading
+buffer = []
+threading.Thread(target=productor,args=[]).start()
+threading.Thread(target=consumidor,args=[]).start()
+
+def productor():
+  while True:
+    event = genera_evento()
+    buffer.append(event)
+
+def consumidor():
+  while True:
+    event = buffer.pop()
+    procesa(event)
+\end{verbatim}
+\begin{center}
+¿Qué problema vemos?
+
+¿Qué estructuras neceistan protección?
+
+(¿Qué estructuras no?)
+\end{center}
+\end{frame}
+\begin{frame}[label={sec:orgee2fe8a},fragile]{Productor-consumidor: Estructuras a emplear}
+ Vamos a emplear dos semáforos:
+\begin{itemize}
+\item Un mutex sencillo (\texttt{mutex})
+\item Un semáforo (\texttt{elementos}) representando el estado del sistema
+\begin{description}
+\item[{\texttt{elementos > 0}}] Cuántos eventos tenemos pendientes por
+procesar
+\item[{\texttt{elementos < 0}}] Cuántos consumidores están listos y
+esperando un evento
+\end{description}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org76381ce},fragile]{Productor-consumidor: Implementación}
+ \begin{verbatim}
+import threading
+mutex = threading.Semaphore(1)
+elementos = threading.Semaphore(0)
+buffer = []
+class Evento:
+  def __init__(self):
+    print("Generando evento")
+  def process(self):
+    print("Procesando evento")
+threading.Thread(target=productor, args=[]).start()
+threading.Thread(target=consumidor, args=[]).start()
+\end{verbatim}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+def productor():
+  while True:
+    event = Evento()
+    mutex.acquire()
+    buffer.append(event)
+    mutex.release()
+    elementos.release()
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+def consumidor():
+  while True:
+    elementos.acquire()
+    mutex.acquire()
+    event = buffer.pop()
+    mutex.release()
+    event.process()
+\end{verbatim}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org85ad73a}]{Problema lectores-escritores: Planteamiento}
+\begin{itemize}
+\item Una estructura de datos puede ser accesada simultáneamente por
+muchos \emph{procesos lectores}
+\item Si un proceso requiere \emph{modificarla}, debe asegurar que:
+\begin{itemize}
+\item Ningún proceso lector esté empleándola
+\item Ningún otro proceso escritor esté empleándola
+\item Los escritores deben tener \emph{acceso exclusivo} a la sección
+crítica
+\end{itemize}
+\item Refinamiento: Debemos evitar que un \emph{influjo constante de lectores}
+nos deje en situación de \emph{inanición}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9811f10},fragile]{Lectores-escritores: Primer acercamiento}
+ \begin{itemize}
+\item El problema es de \emph{exclusión mutua categórica}
+\item Empleamos un patrón \emph{apagador}
+\begin{itemize}
+\item Los escritores entran al \emph{cuarto} sólo con la luz \emph{apagada}
+\end{itemize}
+\item Mutex para el indicador del número de lectores
+\end{itemize}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+import threading
+lectores = 0
+mutex = threading.Semaphore(1)
+cuarto_vacio = threading.Semaphore(1)
+
+def escritor():
+  cuarto_vacio.acquire()
+  escribe()
+  cuarto_vacio.release()
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+def lector():
+  global lectores
+  mutex.acquire()
+  lectores = lectores + 1
+  if lectores == 1:
+    cuarto_vacio.acquire()
+  mutex.release()
+  lee()
+  mutex.acquire()
+  lectores = lectores - 1
+  if lectores == 0:
+    cuarto_vacio.release()
+  mutex.release()
+
+\end{verbatim}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org98fb732},fragile]{Lectores-escritores: Notas}
+ \begin{itemize}
+\item La misma estructura puede usarse siguiendo diferentes patrones
+\begin{itemize}
+\item \texttt{escritor()} usa \texttt{cuarto\_vacio} como un mutex, \texttt{lector()} lo usa
+como un apagador
+\item Porque las características (requisitos) de cada categoría son distintas
+\end{itemize}
+\item Susceptible a la inanición
+\begin{itemize}
+\item Si tenemos alta concurrencia de lectores, un escritor puede
+quedarse esperando para siempre
+\item Podemos agregar un \emph{torniquete} evitando que lectores adicionales
+se \emph{cuelen} si hay un escritor esperando
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org189944d},fragile]{Lectores-escritores sin inanición}
+ \begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+import threading
+lectores = 0
+mutex = threading.Semaphore(1)
+cuarto_vacio = threading.Semaphore(1)
+torniquete = threading.Semaphore(1)
+
+def escritor():
+  torniquete.acquire()
+  cuarto_vacio.acquire()
+  escribe()
+  cuarto_vacio.release()
+  torniquete.release()
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+def lector():
+  global lectores
+  torniquete.acquire()
+  torniquete.release()
+
+  mutex.acquire()
+  lectores = lectores + 1
+  if lectores == 1:
+    cuarto_vacio.acquire()
+  mutex.release()
+
+  lee()
+
+  mutex.acquire()
+  lectores = lectores - 1
+  if lectores == 0:
+    cuarto_vacio.release()
+  mutex.release()
+\end{verbatim}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org4cbb3e7}]{La cena de los filósofos: Planteamiento (1)}
+\begin{itemize}
+\item Hay cinco filósofos sentados a la mesa
+\begin{itemize}
+\item Al centro de la mesa hay un tazón de arroz
+\item Cada filósofo tiene un plato, un palillo a la derecha, y un
+palillo a la izquierda
+\item El palillo lo \emph{comparten} con el filósofo de junto
+\end{itemize}
+\end{itemize}
+\begin{center}
+\begin{center}
+\includegraphics[width=0.3\textwidth]{../img/mesa_filosofos.png}
+\end{center}
+\end{center}
+{\scriptsize Imagenes ilustrativas: Ted P. Baker}
+\end{frame}
+
+\begin{frame}[label={sec:org45edd03}]{La cena de los filósofos: Planteamiento (2)}
+\begin{itemize}
+\item Cada filósofo \emph{sólo} sabe hacer dos cosas: Pensar y comer
+\item Los filósofos \emph{piensan} hasta que les da hambre
+\begin{itemize}
+\item Una vez que tiene hambre, un filósofo levanta un palillo, luego
+levanta el otro, y come
+\item Cuando se sacia, pone en la mesa un palillo, y luego el otro
+\end{itemize}
+\item ¿Qué problemas pueden presentarse?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org0221fcf}]{Cena de filósofos: Bloqueo mutuo}
+\begin{center}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{../img/filosofos_bloqueados.png}
+\caption{Cuando todos los filósofos intentan levantar uno de los palillos se produce un \emph{bloqueo mutuo}}
+\end{figure}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org67cd20c}]{Cena de filósofos: Inanición}
+\begin{center}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/filosofos_inanicion.png}
+\caption{Una rápida sucesión de C y E lleva a la inanición de D}
+\end{figure}
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgdd687ac},fragile]{Cena de filósofos: Primer acercamiento}
+ \begin{itemize}
+\item Para la resolución de este problema, representaremos a los palillos
+como un arreglo de semáforos
+\begin{itemize}
+\item Esto asegura que presenten la semántica de exclusión mutua:
+\emph{levantar un palillo} es una operación atómica
+\end{itemize}
+\item Cada filósofo sabe cuál es su ID (numérico, 0 a \emph{n}; ejemplo con \emph{n}
+= 5)
+\begin{itemize}
+\item Los palillos de \emph{i} son \texttt{palillos[i]} y \texttt{palillos[(i+1) \% n]}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org333998f},fragile]{Cena de filósofos: Primer acercamiento}
+ \begin{verbatim}
+import threading
+num = 5
+palillos = [threading.Semaphore(1) for i in range(num)]
+filosofos = [threading.Thread(target=filosofo, args=[i]).start() for i in range(num)]
+\end{verbatim}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+def filosofo(id):
+  while True:
+    piensa(id)
+    levanta_palillos(id)
+    come(id)
+    suelta_palillos(id)
+def levanta_palillos(id):
+  palillos[(id+1) % num].acquire()
+  print("%d - Tengo el palillo derecho" % id)
+  palillos[id].acquire()
+  print("%d - Tengo ambos palillos" % id)
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+def suelta_palillos(id):
+  palillos[(id+1) % num].release()
+  palillos[id].release()
+  print("%d - Sigamos pensando..." % id)
+def piensa(id):
+  # (...)
+  print("%d - Tengo hambre..." % id)
+def come(id):
+  print("%d - ¡A comer!" % id)
+  # (...)
+\end{verbatim}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:orgb5b27cb}]{Cena de filósofos: Semáforos para comunicación}
+\begin{itemize}
+\item Sujeto a bloqueos mutuos
+\begin{itemize}
+\item Eventualmente, terminarán todos suspendidos con el palillo
+derecho en la mano
+\end{itemize}
+\item ¿Ideas para evitar el bloqueo mutuo?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf115468},fragile]{Cena de filósofos: Filósofos zurdos}
+ \begin{center}
+¿Y si hacemos que los filósofos pares sean diestros y los impares
+sean zurdos?
+\end{center}
+\begin{verbatim}
+def levanta_palillos(id):
+  if (id % 2 == 0): # Zurdo
+    palillo1 = palillos[id]
+    palillo2 = palillos[(id+1) % num]
+  else: # Diestro
+    palillo1 = palillos[(id+1) % num]
+    palillo2 = palillos[id]
+  palillo1.acquire()
+  print("%d - Tengo el primer palillo" % id)
+  palillo2.acquire()
+  print("%d - Tengo ambos palillos" % id)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org2ec447d},fragile]{Cena de filósofos: Basta con uno}
+ \begin{center}
+De hecho, basta con que uno de los filósofos sea zurdo para que no
+haya bloqueo mutuo
+\end{center}
+\begin{verbatim}
+def levanta_palillos(id):
+ if id == 0: # Zurdo
+   palillos[id].acquire()
+   print("%d - Tengo el palillo izquierdo" % id)
+   palillos[(id+1) % num].acquire()
+ else: # Diestro
+   palillos[(id+1) % num].acquire()
+   print("%d - Tengo el palillo derecho" % id)
+   palillos[id].acquire()
+ print("%d - Tengo ambos palillos" % id)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orgcc6fe5c},fragile]{Cena de filósofos: Monitor y VCs (C)}
+ Implementación de \href{http://www.cs.fsu.edu/\~baker/realtime/restricted/notes/philos.html}{Ted P. Baker (Florida State University)} basada en
+Tanenbaum
+
+\begin{verbatim}
+/* Implementacion para cinco filosofos */
+pthread_cond_t  CV[NTHREADS];    /* Variable por filosofo */
+pthread_mutex_t M;               /* Mutex para el monitor */
+int             state[NTHREADS]; /* Estado de cada filosofo */
+
+void init () {
+    int i;
+    pthread_mutex_init(&M, NULL);
+    for (i = 0; i < 5; i++) {
+	pthread_cond_init(&CV[i], NULL);
+	state[i] = PENSANDO;
+    }
+}
+
+void come(int i) {
+    printf("El filosofo %d esta comiendo\n", i);
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org92562ed},fragile]{Cena de filósofos: Monitor y VCs (C)}
+ \begin{verbatim}
+void toma_palillos (int i) {
+    pthread_mutex_lock(&M)
+    state[i] = HAMBRIENTO;
+    actualiza(i);
+    while (state[i] == HAMBRIENTO)
+	pthread_cond_wait(&CV[i], &M);
+    pthread_mutex_unlock(&M);
+}
+
+void suelta_palillos (int i) {
+    state[i] = PENSANDO;
+    actualiza((i + 4) % 5);
+    actualiza((i + 1) % 5);
+    pthread_mutex_unlock(&M);
+}
+\end{verbatim}
+\end{frame}
+
+
+\begin{frame}[label={sec:org896669e},fragile]{Cena de filósofos: Monitor y VCs (C)}
+ \begin{verbatim}
+/* No incluimos 'actualiza' en los encabezados (funcion interna) */
+int actualiza (int i) {
+    if ((state[(i + 4) % 5] != COMIENDO) &&
+	(state[i] == HAMBRIENTO) &&
+	(state[(i + 1) % 5] != COMIENDO)) {
+	state[i] = COMIENDO;
+	pthread_cond_signal(&CV[i]);
+    }
+    return 0;
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org9e108dd}]{Cena de filósofos: Monitor y VCs (C)}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.4\textwidth]{../img/filosofos_monitor.png}
+\caption{Representación del monitor}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:org7173123}]{Cena de filósofos: ¿Y la inanición?}
+\begin{itemize}
+\item La inanición es un problema mucho más dificil de tratar que el
+bloqueo mutuo
+\item El algoritmo presentado por Tanenbaum (1987) buscaba prevenir la
+inanición, pero Gingras (1990) demostró que aún éste es vulnerable a
+ciertos patrones
+\item Gingras propone un algoritmo libre de inanición, pero demanda de
+estructuras adicionales que rompen el planteamiento del problema
+original
+\end{itemize}
+\begin{center}
+\href{https://dl.acm.org/citation.cfm?id\%3D101091}{Artículo de Gingras (1990): Dining philosophers revisited} (descargable
+desde la red de la UNAM — No RIU)
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org20a2701}]{Fumadores compulsivos: Planteamiento}
+\begin{itemize}
+\item Para fumar hacen falta tres ingredientes
+\begin{itemize}
+\item Tabaco, papel, cerillos
+\end{itemize}
+\item Hay tres fumadores compulsivos / en cadena
+\begin{itemize}
+\item Cada uno tiene una cantidad ilimitada de \emph{un} ingrediente
+\item No cooperan, pero no se estorban: No comparten, pero no acaparan
+\end{itemize}
+\item Un \emph{agente} de tiempo en tiempo consigue insumos \emph{en pares}
+\begin{itemize}
+\item Cuando no hay nada en la \emph{mesa}, puede poner una dosis de \emph{dos}
+ingredientes
+\item El agente no habla con los fumadores. Sólo deja los ingredientes
+cuando uno de ellos termina de fumar.
+\item Requisito planteado: \emph{No podemos modificar la lógica del agente}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org8bb8e7c},fragile]{Fumadores compulsivos: Primer implementación}
+ \begin{center}
+Estructuras comunes:
+\end{center}
+\begin{verbatim}
+import random
+import threading
+ingredientes = ['tabaco', 'papel', 'cerillo']
+semaforos = {}
+semaforo_agente = threading.Semaphore(1)
+for i in ingredientes:
+  semaforos[i] = threading.Semaphore(0)
+
+threading.Thread(target=agente, args=[]).start()
+fumadores = [threading.Thread(target=fumador, args=[i]).start() for i in ingredientes]
+
+def fuma(ingr):
+  print('Fumador con %s echando humo...' % ingr)
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orga8502bc},fragile]{Fumadores compulsivos: Primer implementación}
+ \begin{verbatim}
+def agente():
+  while True:
+    semaforo_agente.acquire()
+    mis_ingr = ingredientes[:]
+    mis_ingr.remove(random.choice(mis_ingr))
+    for i in mis_ingr:
+      print("Proveyendo %s" % i)
+      semaforos[i].release()
+
+def fumador(ingr):
+  mis_semaf = []
+  for i in semaforos.keys():
+    if i != ingr:
+      mis_semaf.append(semaforos[i])
+  while True:
+    for i in mis_semaf:
+      i.acquire()
+    fuma(ingr)
+    semaforo_agente.release()
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org4a2a774}]{Fumadores compulsivos: Bloqueo mutuo}
+\begin{itemize}
+\item Tenemos un semáforo por ingrediente
+\item Pero no podemos asegurar el ordenamiento
+\item Al aparecer \emph{un} ingrediente en la mesa, cualquiera de los dos
+fumadores que lo requiera lo va a tomar
+\begin{itemize}
+\item La mitad de las veces, el segundo ingrediente que \emph{aparezca} no
+le servirá
+\item Otro de los fumadores tomará este segundo ingrediente
+\item ¡Bloqueo!
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga268d33},fragile]{Fumadores compulsivos: Empleando intermediarios}
+ \begin{itemize}
+\item No podemos modificar al agente, pero sí a los fumadores
+\item Podemos usar \emph{intermediarios}
+\begin{itemize}
+\item Uno por cada ingrediente
+\item Con comunicación entre sí
+\item Cuando toman una decisión, despiertan al fumador en cuestión
+\end{itemize}
+\item Agregamos algunas variables globales para representar a los
+intermediarios y la comunicación entre ellos
+\end{itemize}
+\begin{verbatim}
+que_tengo = {}
+semaforos_interm = {}
+for i in ingredientes:
+  que_tengo[i] = False
+  semaforos_interm[i] = threading.Semaphore(0)
+interm_mutex = threading.Semaphore(1)
+intermediarios = [threading.Thread(target=intermediario, args=[i]).start() for i in ingredientes]
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orgff3cc7a},fragile]{Fumadores compulsivos: Empleando intermediarios}
+ \begin{center}
+El código del fumador resulta mucho más simple:
+\end{center}
+\begin{verbatim}
+def fumador(ingr):
+  while True:
+    semaforos_interm[ingr].acquire()
+    fuma(ingr)
+    semaforo_agente.release()
+\end{verbatim}
+\begin{center}
+Sólo debe esperar a que su intermediario lo despierte.
+
+Sigue siendo su responsabilidad \emph{notificar al agente} para que éste
+continúe.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org5b68d2b},fragile]{Fumadores compulsivos: Empleando intermediarios}
+ \begin{center}
+¿Qué y cómo se comunican entre sí los intermediarios?
+\end{center}
+\begin{verbatim}
+def intermediario(ingr):
+  otros_ingr = ingredientes[:]
+  otros_ingr.remove(ingr)
+  while True:
+    semaforos[ingr].acquire()
+    interm_mutex.acquire()
+    for i in otros_ingr:
+      if que_tengo[i]:
+	que_tengo[i] = False
+	semaforos_interm[i].release()
+	break
+      que_tengo[i] = True
+    interm_mutex.release()
+\end{verbatim}
+\begin{center}
+Tip: Intentar analizar el flujo en paralelo de los tres intermediarios
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org49f99cc}]{\ldots{} ¿Listos para resolver un ejercicio de tarea?}
+\begin{center}
+Implementa hilos que controlen el siguiente sistema:
+\end{center}
+
+\begin{itemize}
+\item La cochera de casa es de portón de apertura automática
+\item La puerta toma \emph{algún tiempo} en abrir y en cerrar
+\item El coche toma \emph{algún tiempo} en entrar y salir.
+\begin{itemize}
+\item Si hay peatones o vehículos cruzando frente a la puerta, tienes
+que esperar a que terminen de pasar.
+\end{itemize}
+\item La batería del control está muy débil
+\begin{itemize}
+\item Cuando llegas o te vas tienes que pedirle a otro actor que abra y
+cierre por tí.
+\end{itemize}
+\item Si el coche es golpeado por la puerta, se abolla y hay que llevarlo
+al taller. No quieres que eso ocurra.
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[label={sec:orgb804679}]{¿Listos para resolver un ejercicio de tarea?}
+\begin{center}
+Implementa un sistema que tome en cuenta las restricciones en
+cuestión. Para su calificación, importa que:
+\end{center}
+
+\begin{itemize}
+\item El problema se resuelva correctamente
+\item El código sea válido y legal en tu lenguaje favorito
+\begin{itemize}
+\item Puedes asumir que la semántica del control de hilos, señales y
+primitivas de sincronización es similar a la expuesta en clase, no
+hace falta implementar eso a detalle.
+\end{itemize}
+\end{itemize}
+
+Esta tarea pueden hacerla individualmente o en equipos de dos
+personas; en caso de que elijan hacerlo así, les pido que ambos suban
+el mismo archivo a EDUCAFI, y que ambos indiquen quiénes son los
+autores.
+\end{frame}
+
+\section{El problema de inicio}
+\label{sec:orgcc14eee}
+\begin{frame}[label={sec:org74e5c29},fragile]{Volviendo al problema de la concurrencia}
+ \begin{center}
+A modo de corolario, intentemos resolver el problema inicial\ldots{}
+\end{center}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+class EjemploHilos
+  def initialize
+    @x = 0
+  end
+  def f1
+    sleep 0.1
+    print '+'
+    @x += 3
+  end
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+  def f2
+    sleep 0.1
+    print '*'
+    @x *= 2
+  end
+  def run
+    t1 = Thread.new {f1}
+    t2 = Thread.new {f2}
+    sleep 0.1
+    print '%d ' % @x
+  end
+end
+\end{verbatim}
+\end{column}\end{columns}
+\begin{verbatim}
+>> e = EjemploHilos.new;10.times{e.run}
+0 *+3 *+9 *+21 +*48 *+99 +*204 *+411 +*828 *+1659
+>> e = EjemploHilos.new;10.times{e.run}
++0 *+6 *+*18 42 +*+90 **186 +375 +**756 ++1515 *3036
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:org0ebd50a}]{Devolviendo la predictibilidad}
+\begin{itemize}
+\item Tenemos un programa \emph{explícitamente hecho para fallar}
+\begin{itemize}
+\item Con muchos \emph{vicios} en su código
+\end{itemize}
+\item Ilustra cómo los hilos pueden enredarse entre sí
+\item \ldots{} ¿Cómo desenmarañar la madeja?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orga2274f6},fragile]{¿Bastará con proteger con mutex?}
+ \begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+class EjemploHilos
+  def initialize
+    @x = 0
+    @mut = Mutex.new
+  end
+  def run
+    t1 = Thread.new {f1}
+    t2 = Thread.new {f2}
+    sleep 0.1
+    @mut.lock
+    print '%d ' % @x
+    @mut.unlock
+  end
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+  def f1
+    sleep 0.1
+    @mut.lock
+    print '+'
+    @x += 3
+    @mut.unlock
+  end
+  def f2
+    sleep 0.1
+    @mut.lock
+    print '*'
+    @x *= 2
+    @mut.unlock
+  end
+end
+\end{verbatim}
+\end{column}\end{columns}
+\begin{center}
+¿Será con esto suficiente?
+¿Tendremos resultados consistentes?
+¿Para qué intento proteger con el mutex al \texttt{print} en \texttt{run}?
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:org75e4c46},fragile]{Un mutex no es suficiente}
+ \begin{verbatim}
+>>  e = EjemploHilos.new;10.times{e.run}
+0 *++3 *12 *+*27 +57 +*120 *+243 +*492 +*+993 *1986 +=> 10
+>> * e = EjemploHilos.new;10.times{e.run}
+0 +**6 +15 +*36 +*+78 *162 +*330 +*666 +**1338 +2679 => 10
+>> *
+\end{verbatim}
+\begin{itemize}
+\item Nuestro problema no \emph{sólo} venía del acceso concurrente a \texttt{@x}
+\item Sino que al ordenamiento relativo
+\begin{itemize}
+\item No importa que entren a la vez
+\item \((a + b) \times c \ne a + (b \times c)\)
+\end{itemize}
+\item ¿Cómo podemos asegurar una invocación ordenada \emph{sin perder el paralelismo}?
+\begin{itemize}
+\item Las tres funciones (\texttt{f1}, \texttt{f2} y \texttt{run}) incluyen un \texttt{sleep(0.1)}
+\item Que ese \texttt{sleep} reperesente nuestro código \emph{paralelizable}
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+
+\begin{frame}[label={sec:org6c73916},fragile]{Solución 1: Esperar a la finalización de los hilos}
+ \begin{center}
+Del mismo modo que podemos lanzar un hilo nuevo (en Ruby, \texttt{Thread.new
+\{...\}}; en Python, \texttt{threading.Thread(...).start()}), podemos esperar a que
+termine, con \texttt{join}
+\end{center}
+\begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+class EjemploHilos
+  def initialize
+    @x = 0
+  end
+  def run
+    t1 = Thread.new {f1}
+    t2 = Thread.new {f2(t1)}
+    sleep 0.1
+    t2.join
+    print '%d ' % @x
+  end
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+  def f1
+    sleep 0.1
+    print '+'
+    @x += 3
+  end
+  def f2(t)
+    sleep 0.1
+    t.join
+    print '*'
+    @x *= 2
+  end
+end
+\end{verbatim}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org6a6cc06},fragile]{Esperar a la finalización}
+ \begin{verbatim}
+>> e = EjemploHilos.new;10.times{e.run}
++*6 +*18 +*42 +*90 +*186 +*378 +*762 +*1530 +*3066 +*6138 => 10
+>> e = EjemploHilos.new;10.times{e.run}
++*6 +*18 +*42 +*90 +*186 +*378 +*762 +*1530 +*3066 +*6138 => 10
+\end{verbatim}
+\begin{itemize}
+\item Código resultante \emph{claro}, aunque más rígido
+\begin{itemize}
+\item ¿Qué tendríamos que modificar para que la multiplicación ocurra
+\emph{antes de} la suma?
+\end{itemize}
+\item \emph{Mayor acoplamiento} entre las tres funciones
+\begin{itemize}
+\item \texttt{f2} debe recibir una referencia al hilo 1 (\texttt{t})
+\item Cada función debe \emph{comprender} su papel en la \emph{línea de
+ensamblaje}
+\end{itemize}
+\item ¿Aprovecho efectivamente el paralelismo?
+\begin{itemize}
+\item ¿Se ejecutan \emph{a la vez} las secciones no críticas?
+(los \texttt{sleep 0.1})
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgd9313c2},fragile]{Modificando el flujo}
+ \begin{columns}\begin{column}{0.45\textwidth}
+\begin{verbatim}
+def run
+  t1 = Thread.new {f1}
+  t2 = Thread.new {f2(t1)}
+  sleep 0.1
+  t2.join
+  print '%d ' % @x
+end
+def f1
+  sleep 0.1
+  print '+'; @x += 3
+end
+def f2(t)
+  sleep 0.1
+  t.join
+  print '*'; @x *= 2
+end
+\end{verbatim}
+\end{column} \begin{column}{0.1\textwidth}
+\rarrow
+\end{column} \begin{column}{0.45\textwidth}
+\begin{verbatim}
+def run
+  t1 = Thread.new {f2}
+  t2 = Thread.new {f1(t1)}
+  sleep 0.1
+  t2.join
+  print '%d ' % @x
+end
+def f1(t)
+  sleep 0.1
+  t.join
+  print '+'; @x += 3
+end
+def f2
+  sleep 0.1
+  print '*'; @x *= 2
+end
+\end{verbatim}
+\end{column}\end{columns}
+\begin{verbatim}
+e = EjemploHilos.new;10.times{e.run}
+*+3 *+9 *+21 *+45 *+93 *+189 *+381 *+765 *+1533 *+3069 => 10
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[label={sec:orgd066a66},fragile]{Solución 2: Variables de condición}
+ \begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+class EjemploHilos
+  require 'thread'
+  def initialize
+    @x = 0; @estado = 0
+    @mut = Mutex.new
+    @cv = ConditionVariable.new
+  end
+  def run
+    @estado = 0
+    t1 = Thread.new {f1}
+    t2 = Thread.new {f2}
+    sleep 0.1; @mut.lock
+    @cv.wait(@mut) while (@estado != 2)
+    puts '%d ' % @x
+    @mut.unlock
+  end
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+  def f1
+    sleep 0.1; @mut.lock
+    @cv.wait(@mut) while (@estado != 0)
+    @x += 3; @estado += 1
+    @cv.broadcast
+    @mut.unlock
+  end
+  def f2
+    sleep 0.1; @mut.lock
+    @cv.wait(@mut) while (@estado != 1)
+    @x *= 2; @estado += 1
+    @cv.broadcast
+    @mut.unlock
+  end
+end
+\end{verbatim}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org88d94a5},fragile]{Sincronización a través de CV}
+ \begin{description}
+\item[{Desventaja}] Código resultante \emph{más complejo} (más elementos a
+considerar), aunque más flexible
+\begin{itemize}
+\item Ejemplo de complejidad: No \emph{me} funcionó tras un tiempo
+razonable :-P
+\item Podría mejorarse con un poco de \emph{azucar sintáctico}
+\end{itemize}
+\item[{Ventaja}] Menor acoplamiento entre funciones
+\begin{itemize}
+\item Ordenamiento determinado por \texttt{@estado}
+\item Podría configurarse en un sólo punto — Ejemplo a continuación
+\end{itemize}
+\end{description}
+\end{frame}
+\begin{frame}[label={sec:orgef31960},fragile]{Solución 3: CVs, ordenamiento centralizado}
+ \begin{columns}\begin{column}{0.5\textwidth}
+\begin{verbatim}
+class EjemploHilos
+  require 'thread'
+  def initialize
+    @orden = {:f1 => 0, :f2 => 1, :run => 2}
+    @x = 0; @estado = 0
+    @mut = Mutex.new
+    @cv = ConditionVariable.new
+  end
+  def run
+    @estado = 0
+    t1 = Thread.new {f1}
+    t2 = Thread.new {f2}
+    sleep 0.1; @mut.lock
+    @cv.wait(@mut) while (@estado != @orden[:run])
+    puts '%d ' % @x
+    @mut.unlock
+  end
+\end{verbatim}
+\end{column} \begin{column}{0.5\textwidth}
+\begin{verbatim}
+  def f1
+    sleep 0.1; @mut.lock
+    @cv.wait(@mut) while (@estado != @orden[:f1])
+    @x += 3; @estado += 1
+    @cv.broadcast
+    @mut.unlock
+  end
+  def f2
+    sleep 0.1; @mut.lock
+    @cv.wait(@mut) while (@estado != @orden[:f2])
+    @x *= 2; @estado += 1
+    @cv.broadcast
+    @mut.unlock
+  end
+end
+\end{verbatim}
+\end{column}\end{columns}
+\end{frame}
+
+\begin{frame}[label={sec:org98bc216},fragile]{¿Y cómo es que \emph{el intérprete} detecta\ldots{}?}
+ \begin{itemize}
+\item Por varios semestres(!) \emph{no pude lograr} que el código que les
+presenté funcionara
+\begin{itemize}
+\item El intérprete \emph{detecta un bloqueo mutuo}
+\item Indica, sin duda, un error del programador
+\begin{verbatim}
+>> EjemploHilos.new.run
+fatal: deadlock detected
+	from /usr/lib/ruby/1.9.1/thread.rb:71:in 'sleep'
+	from /usr/lib/ruby/1.9.1/thread.rb:71:in 'wait'
+	(...)
+\end{verbatim}
+\item Y, sí, derivaba de que llamaba a \texttt{@cv.broadcast(@mut)} (argumento
+de más)
+\end{itemize}
+\item Pero\ldots{} ¿Cómo se dio cuenta?
+\begin{itemize}
+\item ¿Cómo puede Ruby \emph{prevenir} este bloqueo y \emph{notificar al
+programador}? ¿¡Antes de la primer iteración!?
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org607e16b}]{¡No se lo pierda!}
+\begin{itemize}
+\item ¡Muy pronto!
+\item ¡A la misma hora! ¡Por el mismo canal!
+\end{itemize}
+\begin{center}
+{\Huge Bloqueos mutuos} \vfill \pause {\Large ¡Prevención! \pause \\ ¡Evasión! \pause \\ ¡Detección y recuperación! \pause \vfill {\scriptsize ...Y la triste realidad} }
+\end{center}
+\end{frame}
+\end{document}

@@ -1,0 +1,464 @@
+% Created 2023-02-06 Mon 12:04
+% Intended LaTeX compiler: pdflatex
+\documentclass[presentation]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{wrapfig}
+\usepackage{rotating}
+\usepackage[normalem]{ulem}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{capt-of}
+\usepackage{hyperref}
+\usepackage[spanish]{babel}
+\usepackage{listings}
+\pgfdeclareimage[height=0.7\textheight]{../img/pres/cintillo.png}{../img/pres/cintillo.png}\logo{\pgfuseimage{../img/pres/cintillo.png}}
+\AtBeginSection[]{ \begin{frame}<beamer> \frametitle{Índice} \tableofcontents[currentsection] \end{frame} }
+\definecolor{string}{rgb}{0,0.6,0} \definecolor{shadow}{rgb}{0.5,0.5,0.5} \definecolor{keyword}{rgb}{0.58,0,0.82} \definecolor{identifier}{rgb}{0,0,0.7}
+\renewcommand{\ttdefault}{pcr}
+\lstset{basicstyle=\ttfamily\scriptsize\bfseries, showstringspaces=false, keywordstyle=\color{keyword}, stringstyle=\color{string}, identifierstyle=\color{identifier}, commentstyle=\mdseries\textit, inputencoding=utf8, extendedchars=true, breaklines=true, breakatwhitespace=true, breakautoindent=true, numbers=left, numberstyle=\ttfamily\tiny\textit}
+\newcommand{\rarrow}{$\rightarrow$\hskip 0.5em}
+\usetheme{Warsaw}
+\usecolortheme{lily}
+\author{Gunnar Wolf}
+\date{}
+\title{Administración de procesos: Procesos e hilos}
+\hypersetup{
+ pdfauthor={Gunnar Wolf},
+ pdftitle={Administración de procesos: Procesos e hilos},
+ pdfkeywords={},
+ pdfsubject={},
+ pdfcreator={Emacs 28.2 (Org mode 9.5.5)}, 
+ pdflang={Spanish}}
+\begin{document}
+
+\maketitle
+
+\section{Concepto y estados de un proceso}
+\label{sec:org8674b1c}
+
+\begin{frame}[label={sec:orga0070e7}]{¿Cuándo es proceso? ¿Cuando es programa?}
+\begin{description}
+\item[{Programa}] Una lista de instrucciones a seguir, una \emph{entidad
+pasiva}
+\item[{Proceso}] \emph{Entidad activa} que:
+\begin{itemize}
+\item \emph{Emplea} al programa
+\item Típicamente opera sobre un \emph{conjunto de datos}
+\item Tiene \emph{información de estado} que indica, entre otras cosas, en
+qué punto va la ejecución.
+\end{itemize}
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org3f16589}]{¿Cuando es proceso? ¿Cuándo es tarea?}
+\begin{description}
+\item[{Tarea}] Equivalente a un proceso en un \emph{sistema por lotes};
+requiere típicamente menos metainformación.
+\end{description}
+\begin{center}
+La distinción proceso-tarea no es del todo clara u objetiva.
+\vfill
+Hay textos que emplean uno u otro término indistintamente
+\vfill
+Nosotros emplearemos siempre el término \emph{proceso}.
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgb298802}]{La ilusión de la concurrencia}
+\begin{itemize}
+\item Un sistema actual nos da la \emph{ilusión} de ejecución simultánea de
+muchos procesos
+\item La realidad: Casi todos están suspendidos, esperando que los active
+el planificador
+\item En un momento dado sólo puede estarse ejecutando un número de
+procesos igual o menor al número de CPUs que tenga el sistema.
+\item Esa ilusión tiene grandes costos\ldots{} Especialmente pensando con
+suficiente velocidad
+\end{itemize}
+\end{frame}
+
+\section{El proceso}
+\label{sec:orgc3f2d36}
+
+\begin{frame}[label={sec:orge00af58}]{Estados de un proceso}
+Un proceso, a lo largo de su vida, alterna entre diferentes \emph{estados}
+de ejecución. Estos son:
+
+\begin{description}
+\item[{Nuevo}] Se solicitó al sistema la creación de un proceso, y sus
+recursos y estructuras están siendo creadas
+
+\item[{Listo}] Está listo para ser asignado para su ejecución
+
+\item[{En ejecución}] El proceso está siendo ejecutado
+
+\item[{Bloqueado}] En espera de algún evento para poder continuar
+ejecutándose
+
+\item[{Terminado}] El proceso terminó de ejecutarse; sus estructuras están
+a la espera de ser \emph{limpiadas} por el sistema
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org899c864}]{Estados de un proceso}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/dot/estados_proceso.png}
+\caption{Diagrama de transición entre los estados de un proceso}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgc48f019}]{El bloque de control del proceso (PCB) (1)}
+\begin{center}
+¿Qué información debe mantener el sistema acerca de cada proceso?
+
+O, ¿Cuánto cuesta un cambio de contexto?
+\end{center}
+
+\begin{description}
+\item[{Estado del proceso}] El estado actual del proceso
+
+\item[{Contador de programa}] Cuál es la siguiente instrucción a ser
+ejecutada
+
+\item[{Registros del CPU}] Información específica del estado del CPU
+
+\item[{Información de planificación (scheduling)}] La prioridad del
+proceso, la \emph{cola} en que está agendado, y demás información que
+puede ayudar al sistema operativo a agendar al proceso
+\end{description}
+\end{frame}
+
+\begin{frame}[label={sec:org39082bf}]{El bloque de control del proceso (PCB) (2)}
+\begin{description}
+\item[{Información de administración de memoria}] Las tablas de mapeo de
+memoria (páginas o segmentos, dependiendo del sistema
+operativo).
+
+\item[{Estado de E/S}] Listado de dispositivos y archivos asignados que el
+proceso tiene \emph{abiertos} en un momento dado.
+
+\item[{Información de contabilidad}] Información de la utilización de
+recursos que ha tenido este proceso
+\begin{itemize}
+\item Tiempo \emph{de usuario} y \emph{de sistema}
+\item Uso acumulado de memoria y dispositivos
+\item etc.
+\end{itemize}
+\end{description}
+\end{frame}
+
+\section{Hilos}
+\label{sec:orgc621d9b}
+
+\begin{frame}[label={sec:org8ef5a5e}]{El problema con los hilos}
+\begin{quote}
+Aunque los hilos parecen ser un pequeño paso partiendo del cómputo
+secuencial, de hecho, son un paso inmenso. Descartan las propiedades
+más esenciales y atractivas del cómputo secuencial: Facilidad de
+comprensión, predictabilidad y determinismo. Los hilos, como un modelo
+de computación, son salvajemente no-determinísticos, y el trabajo del
+programador se convierte en \emph{podar} ese no-determinismo.
+
+— \emph{El problema con los hilos}, Edward A. Lee, UC Berkeley, 2006
+\end{quote}
+\end{frame}
+
+\begin{frame}[label={sec:orge07f904}]{El peso de los procesos}
+\begin{itemize}
+\item La cantidad de información implicada en un cambio de contexto es
+muy grande
+\item Desperdicio \emph{burocrático} de recursos
+\item Una respuesta: \emph{procesos ligeros} (\emph{Lightweight processes}, LWP)
+\begin{itemize}
+\item Diversos \emph{hilos de ejecución} dentro de un mismo proceso
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgb537ccf}]{Extrapolando}
+\begin{itemize}
+\item Un proceso que no usa hilos es \emph{un sólo hilo}
+\item Un sistema operativo que no ofrece soporte para hilos agendaría a
+nuestro proceso como a cualquier otro
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org7ce10d2}]{La diferencia desde dentro}
+\begin{itemize}
+\item Entre diferentes procesos, cada uno tiene ilusión de \emph{exclusividad
+virtual} sobre la computadora
+\begin{itemize}
+\item Espacio de direccionamiento de memoria exclusivo
+\item Descriptores de archivos y dispositivos independientes
+\end{itemize}
+\item Los hilos \emph{son y deben ser conscientes} de su coexistencia
+\begin{itemize}
+\item Comparten memoria, descriptores de archivos y dispositivos
+\item Pueden tener \emph{variables} locales y globales
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org26ee20b}]{¿Qué tanto se \emph{aligera} el PCB?}
+\begin{itemize}
+\item Estado del proceso
+\item Cada hilo se ejecuta de forma aparentemente secuencial
+\begin{itemize}
+\item Tiene su propio \emph{contador de programa}
+\item Y su propia pila de llamadas (\emph{stack})
+\end{itemize}
+\item Conjunto de variables locales
+\begin{itemize}
+\item Puede ser implementado de forma muy sencilla
+\item p.ej. con arreglos indexados por ID de hilo
+\end{itemize}
+\item Información de planeación \emph{interna}
+\item Pueden llevar información de contabilidad
+\item No requerimos:
+\begin{itemize}
+\item Registros del CPU
+\item Estado de E/S
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9a0f4ab}]{Patrones de trabajo: Jefe / trabajador}
+\begin{itemize}
+\item Un hilo tiene una tarea distinta de todos los demás
+\item El hilo \emph{jefe} genera o recopila tareas
+\item Los hilos \emph{trabajadores} efectúan el trabajo.
+\item Modelo común para procesos servidor, GUIs que procesan eventos
+\item El jefe puede llevar la contabilidad de los trabajos realizados
+\end{itemize}
+\end{frame}
+\begin{frame}[label={sec:orga644299}]{Patrones de trabajo: Jefe / trabajador}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/dot/jefe_trabajador.png}
+\caption{Patrón de hilos jefe/trabajador}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgf0e7675}]{Patrones de trabajo: Equipo de trabajo}
+\begin{itemize}
+\item A partir de hilos idénticos
+\item Realizarán las mismas tareas sobre diferentes datos
+\item Muy frecuentemente utilizado para cálculos matemáticos
+(p.ej. criptografía, render).
+\item Puede combinarse con jefe/trabajador para generar
+previsualizaciones (la tarea se realiza progresivamente)
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org9b110c3}]{Patrones de trabajo: Equipo de trabajo}
+\begin{figure}[htbp]
+\centering
+\includegraphics[height=0.7\textheight]{../img/dot/equipo_trab.png}
+\caption{Patrón de hilos \emph{Equipo de trabajo}}
+\end{figure}
+\end{frame}
+
+\begin{frame}[label={sec:orgfd7ad1e}]{Patrones de trabajo: Línea de ensamblado}
+\begin{itemize}
+\item Una tarea larga que puede dividirse en pasos
+\item Cada hilo se enfoca en una sóla tarea
+\item Pasa los datos a otro hilo conforme va terminando
+\item Ayuda a mantener las rutinas simples de comprender
+\item Permite continuar procesando datos cuando hay hilos esperando E/S
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orge924a51}]{Patrones de trabajo: Línea de ensamblado}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\textwidth]{../img/dot/linea_ensamblado.png}
+\caption{Patrón de hilos \emph{Línea de ensamblado}}
+\end{figure}
+\end{frame}
+
+\section{Los hilos para el sistema operativo}
+\label{sec:orge13ee33}
+
+\begin{frame}[label={sec:orgbca0312}]{Hilos de usuario (o hilos verdes)}
+\begin{itemize}
+\item Los hilos pueden implementarse 100\% con las facilidades del proceso
+\begin{itemize}
+\item Caso extremo: Programas multihilos en sistemas operativos mínimos
+(o directo sobre el hardware)
+\end{itemize}
+\item Mayor portabilidad
+\item A través de alguna biblioteca \emph{del lenguaje/entorno de programación}
+\item Típicamente multitarea \emph{interna} cooperativa
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgf214793}]{Pros y contras de los hilos de usuario}
+\begin{center}
+Ganamos:
+\end{center}
+\begin{itemize}
+\item Espacio de memoria compartido sin intervención del sistema operativo
+\item Mayor rapidez para realizar trabajos cooperativos o multiagentes
+\end{itemize}
+\begin{center}
+Perdemos:
+\end{center}
+\begin{itemize}
+\item Cualquier llamada al sistema interrumpe a \emph{todos los hilos}
+\item No aprovechan el multiprocesamiento
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org434ed52}]{Hilos nativos (o hilos de kernel)}
+\begin{itemize}
+\item A través de bibliotecas de sistema que \emph{informan} al sistema
+\item El núcleo se encarga de la multitarea \emph{preventiva} entre los hilos
+\item El proceso \emph{puede} pedir al sistema un mayor número de procesadores
+\begin{itemize}
+\item Logrando ejecución verdaderamente paralela
+\end{itemize}
+\item El sistema puede priorizar de diferente manera a un proceso
+multihilo
+\end{itemize}
+\end{frame}
+
+\section{Concurrencia}
+\label{sec:org3ef014b}
+
+\begin{frame}[label={sec:org840bb7d}]{Referencia bibliográfica}
+\begin{center}
+Para este tema, recomiendo fuertemente revisen «\href{http://greenteapress.com/semaphores/LittleBookOfSemaphores.pdf}{The little book of
+semaphores}» de Allen Downey (2008) (disponible para su descarga como
+PDF).
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orge1ed841}]{¿Qué es concurrencia?}
+\begin{itemize}
+\item Quedó ya claro que (para nosotros) concurrencia no significa que dos
+o más eventos ocurran al mismo tiempo
+\item Nos referimos a dos o más eventos \emph{cuyo órden no es determinista}
+\item No podemos predecir el órden relativo en que ocurrirán
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgbc050d8}]{¿Cuándo hablamos de concurrencia?}
+\begin{itemize}
+\item Dos o más hilos del mismo proceso
+\item Dos o más procesos en la misma computadora
+\item Dos o más procesos en computadoras separadas conectadas por red
+\item Dos o más procesos que ocurran sin conexión alguna y posteriormente
+requieran sincronización
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5ddc493}]{La sincronización implica involucramiento del programador}
+\begin{center}
+El sistema operativo brinda la \emph{ilusión} a cada proceso de estar
+ejecutando en una computadora dedicada, pero\ldots{}
+\end{center}
+\begin{itemize}
+\item El proceso puede depender de datos obtenidos en fuentes externas
+\item Puede ser necesario esperar a que otro proceso haya pasado cierto
+punto en su ejecución
+\begin{itemize}
+\item …Que tengamos ya los resultados parciales de un cómputo paralelo
+\item …O que no más de \emph{m} o menos de \emph{n} procesos estén en determinado punto
+\item …O notificar a otro proceso de nuestro avance, o…
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org5a85581}]{La sincronización como comunicación entre procesos (IPC)}
+\begin{itemize}
+\item En esta sección veremos ejemplos de \emph{primitivas de sincronización}
+\item Todas ellas son modalidades de \emph{comunicación entre procesos} (IPC)
+\item Nos centraremos principalmente en los \emph{semáforos}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org935b40e}]{Problemas clásicos para ir pensando}
+\begin{itemize}
+\item Problema productor-consumidor
+\item Problema lectores-escritores
+\item La cena de los filósofos
+\item Los fumadores compulsivos
+\end{itemize}
+
+\begin{center}
+…Y hay \(\approx\) 20 problemas más explicados en \emph{The little book of
+semaphores}.
+\vfill
+¡Revísenlo!
+\end{center}
+\end{frame}
+
+\begin{frame}[label={sec:orgc9c0cc0}]{Problema productor-consumidor}
+\begin{itemize}
+\item Pensemos un entorno multihilo como una línea de ensamblado
+\begin{itemize}
+\item Algunos hilos \emph{producen} ciertas estructuras (p.ej. eventos en un
+GUI)
+\item Otros hilos las \emph{consumen} (procesan los eventos)
+\end{itemize}
+\item Los eventos se \emph{apilan} en un buffer disponible para todos los hilos
+\item ¿Cómo podemos asegurar que dos hilos no modifiquen al buffer al
+mismo tiempo?
+\item ¿Cómo podemos evitar que los consumidores hagan \emph{espera activa}?
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:orgc43a85a}]{Problema lectores-escritores}
+\begin{itemize}
+\item Muchos procesos \emph{lectores} pueden usar simultáneamente una estrucura
+\begin{itemize}
+\item Si algún proceso \emph{escritor} la requiere, debemos evitar que
+cualquier \emph{lector} esté activo
+\end{itemize}
+\item Requisitos de sincronización:
+\begin{itemize}
+\item Sin límite en la cantidad de \emph{lectores activos}
+\item Los escritores deben tener \emph{acceso exclusivo} a la \emph{sección crítica}
+\item Evitar \emph{inanición} de escritores por exceso de lectores
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org800e85a}]{La cena de los filósofos (Edsger Dijkstra, 1965)}
+\begin{itemize}
+\item Una mesa redonda
+\item Tazón de arroz al centro
+\item Cinco platos, cinco filósofos, cinco palillos chinos
+\item Los filósofos piensan hasta tener hambre.
+\begin{itemize}
+\item Cuando tienen hambre, buscan comer
+\item No hablan entre sí
+\end{itemize}
+\item Sólo un filósofo puede sostener un palillo a la vez
+\item ¿Qué puede salir mal?
+\begin{itemize}
+\item ¿Cómo evitarlo con sólo primitivas de sincronización?
+\end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}[label={sec:org935603f}]{Los fumadores compulsivos (Suhas Patil, 1971)}
+\begin{itemize}
+\item Tres fumadores empedernidos
+\begin{itemize}
+\item Con cantidades ilimitadas de uno de tres ingredientes cada uno:
+Tabaco, papel, cerillos
+\end{itemize}
+\item Un \emph{agente} que consigue ingredientes independientemente
+\item ¿Cómo asegurarse de que los recursos se utilizan siempre, \emph{tan
+pronto como estén disponibles}?
+\begin{itemize}
+\item Sin que el agente sepa quién tiene qué ingrediente
+\end{itemize}
+\end{itemize}
+\end{frame}
+\end{document}
