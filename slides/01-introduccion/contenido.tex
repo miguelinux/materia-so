@@ -2,11 +2,102 @@
 % SPDX-License-Identifier: CC-BY-SA-4.0
 
 \begin{frame}
-    \frametitle{Contenido}
-    \tableofcontents
+  \frametitle{Contenido}
+  \tableofcontents
 \end{frame}
 
-\section{sección}
+\section{¿Qué son y qué hacen?}
 
-\begin{frame}[c]{Titulo}
+\begin{frame}{¿Qué es un sistema operativo?}
+  \begin{itemize}
+    \item El \emph{sistema base} de una computadora \pausa
+    \item El programa que \emph{siempre corre} \pausa
+    \item Gestor de los \emph{recursos} del sistema \pausa
+    \item Lo que define \emph{qué es compatible} y \emph{qué no} dentro de una
+          determinada arquitectura \pausa
+    \item El programa \emph{menos importante} de todos \pausa
+        \begin{itemize}
+          \item No realiza \emph{trabajo útil}, sino que permite que \emph{otros} lo hagan
+        \end{itemize}
+    \item …
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{…¿Qué \emph{no} es?}
+  \begin{itemize}
+    \item Los programas básicos para administrar archivos
+    \item La forma en que el usuario \emph{lanza} programas
+    \item El ambiente con que interactúa el usuario
+        \begin{itemize}
+            \item Entorno gráfico
+            \item Línea de comando
+            \item …
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{¿Qué brinda al \emph{programador}?}
+  \begin{itemize}
+    \item Abstracción
+        \begin{itemize}
+          \item \emph{Embellecimiento} -Finkel
+          \item \emph{Virtualización} -Arpaci-Dusseau
+        \end{itemize}
+    \item Gestión de recursos
+    \item Aislamiento y protección
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Abstracción}
+  \begin{center}
+    Proporciona \emph{abstracciones consistentes} y \emph{simplificaciones} a los
+    procesos del usuario
+  \end{center}
+  \begin{itemize}
+    \item Archivos y directorios
+    \item \emph{Flujos de caracteres} (entrada/salida)
+    \item Dispositivos, conexiones de red, contacto con el \emph{mundo exterior}
+    \item El concepto mismo de \emph{proceso}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Gestión de recursos}
+  \begin{center}
+    Administra los \emph{recursos existentes} en la computadora, permitiendo la
+    ejecución a los diversos procesos
+  \end{center}
+  \begin{itemize}
+    \item Cómo comparten los diversos procesos los recursos existentes (y
+          rivales)
+    \item Políticas de asignación (y recuperación) justas
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Aislamiento y protección}
+  \begin{center}
+      Protección de los datos, de los recursos, de los procesos
+  \end{center}
+  \begin{itemize}
+    \item Entre procesos
+    \item Entre usuarios
+    \item Ante procesos \emph{mal comportados}
+    \item Ante procesos maliciosos
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Ahora sí… ¿Qué es un sistema operativo?}
+  \begin{itemize}
+    \item El principal programa que corre en una computadora de propósito
+          general
+    \item Provee una serie de abstracciones básicas a los programas
+          \begin{itemize}
+            \item Pueden haber diferentes sistemas operativos, definiendo distintas
+                  \emph{interfaces}, sobre el mismo hardware
+            \item Un mismo sistema operativo puede \emph{adecuarse a} distintas
+                  arquitecturas de hardware
+          \end{itemize}
+    \item Ofrece una infraestructura de gestión, aislamiento y protección de
+        recursos
+    \item Permite la implementación de \emph{entornos operativos}
+  \end{itemize}
 \end{frame}
